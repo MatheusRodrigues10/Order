@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Settings {
+  id                     Int    @id @default(1)
+  totalMesas             Int    @default(70)
+  duracaoReservaMinutos Int   @default(120)
+  duracaoLimpezaMinutos Int    @default(15)
+  apiPin                 String @default("123456")
+
+  @@map("settings")
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("admins")
+}
+
+model Reserva {
+  id          Int      @id @default(autoincrement())
+  numeroMesa  Int      @unique
+  reservadoEm DateTime @default(now())
+  expiraEm    DateTime
+  liberaEm    DateTime
+
+  @@index([liberaEm])
+  @@map("reservas")
+}
