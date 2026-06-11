@@ -216,6 +216,10 @@ label {
   gap: 20px;
 }
 
+.history-panel {
+  margin-top: 18px;
+}
+
 .settings-panel form {
   padding-top: 16px;
   border-top: 1px solid #e6ecea;
@@ -232,6 +236,101 @@ label {
 
 .inline-form input {
   max-width: 220px;
+}
+
+.booking-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.seat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+  color: #52605d;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.seat-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+}
+
+.legend-dot.available {
+  background: #24786a;
+}
+
+.legend-dot.reserved {
+  background: #ba583d;
+}
+
+.legend-dot.blocked {
+  background: #8d9794;
+}
+
+.seat-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 10px;
+}
+
+.seat-button {
+  min-width: 0;
+  aspect-ratio: 1 / 0.82;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  color: #ffffff;
+  font-weight: 850;
+  line-height: 1;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.seat-button span {
+  font-size: 15px;
+}
+
+.seat-button.available {
+  background: #24786a;
+  box-shadow: 0 10px 18px rgba(36, 120, 106, 0.16);
+}
+
+.seat-button.available:hover {
+  border-color: #16584d;
+  box-shadow: 0 14px 24px rgba(36, 120, 106, 0.22);
+  transform: translateY(-1px);
+}
+
+.seat-button.reserved {
+  background: #ba583d;
+}
+
+.seat-button.reserved:hover {
+  border-color: #8f3427;
+  box-shadow: 0 14px 24px rgba(186, 88, 61, 0.22);
+  transform: translateY(-1px);
+}
+
+.seat-button.blocked {
+  background: #8d9794;
 }
 
 .primary-button,
@@ -428,12 +527,20 @@ td:first-child {
     flex-direction: column;
   }
 
+  .booking-filters {
+    align-items: stretch;
+  }
+
   .topbar-actions {
     justify-content: flex-start;
   }
 
   .metrics-grid,
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-filters {
     grid-template-columns: 1fr;
   }
 

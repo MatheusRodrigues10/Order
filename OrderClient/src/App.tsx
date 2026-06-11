@@ -11,6 +11,7 @@ import {
   Settings,
   Table2,
   Trash2,
+  UtensilsCrossed,
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -24,10 +25,13 @@ type Dashboard = {
 }
 
 type Reserva = {
+  id: number
   mesa: number
   reservadoEm: string
+  inicioEm: string
   expiraEm: string
   liberaEm: string
+  duracaoMinutos: number
   emLimpeza: boolean
 }
 
@@ -35,6 +39,27 @@ type Config = {
   totalMesas: number
   duracaoReservaMinutos: number
   duracaoLimpezaMinutos: number
+}
+
+type SeatStatus = 'available' | 'reserved' | 'blocked'
+
+type Seat = {
+  mesa: number
+  status: SeatStatus
+  reserva?: {
+    id: number
+    inicioEm: string
+    expiraEm: string
+    liberaEm: string
+  }
+}
+
+type Disponibilidade = {
+  totalMesas: number
+  dataReserva: string
+  horarioInicio: string
+  duracaoMinutos: number
+  assentos: Seat[]
 }
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
@@ -61,6 +86,26 @@ function formatDuration(minutes?: number) {
   return `${hours}:${String(remainingMinutes).padStart(2, '0')}`
 }
 
+function todayInput() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function roundedTimeInput() {
+  const date = new Date()
+  date.setMinutes(Math.ceil(date.getMinutes() / 15) * 15, 0, 0)
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+function seatLabel(status: SeatStatus) {
+  const labels = {
+    available: 'Disponivel',
+    reserved: 'Reservado',
+    blocked: 'Bloqueado',
+  }
+
+  return labels[status]
+}
+
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem(tokenKey) ?? '')
   const [email, setEmail] = useState('admin@restaurant.local')
@@ -68,7 +113,11 @@ function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null)
   const [reservas, setReservas] = useState<Reserva[]>([])
   const [config, setConfig] = useState<Config | null>(null)
-  const [mesaManual, setMesaManual] = useState('')
+  const [disponibilidade, setDisponibilidade] = useState<Disponibilidade | null>(null)
+  const [dataReserva, setDataReserva] = useState(todayInput)
+  const [horarioInicio, setHorarioInicio] = useState(roundedTimeInput)
+  const [duracaoReserva, setDuracaoReserva] = useState('')
+  const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null)
   const [totalMesas, setTotalMesas] = useState('')
   const [duracaoMinutos, setDuracaoMinutos] = useState('')
   const [duracaoLimpezaMinutos, setDuracaoLimpezaMinutos] = useState('')
@@ -116,13 +165,26 @@ function App() {
         request<Reserva[]>('/admin/reservas'),
         request<Config>('/admin/config'),
       ])
+      const duracaoConsulta = Number(duracaoReserva || configData.duracaoReservaMinutos)
+      const params = new URLSearchParams({
+        dataReserva,
+        horarioInicio,
+        duracaoMinutos: String(duracaoConsulta),
+      })
+      const disponibilidadeData = await request<Disponibilidade>(`/admin/reservas/disponibilidade?${params}`)
 
-      setDashboard(dashboardData)
+      setDashboard({
+        ...dashboardData,
+        mesasReservadas: disponibilidadeData.assentos.filter((assento) => assento.status !== 'available').length,
+        mesasLivres: disponibilidadeData.assentos.filter((assento) => assento.status === 'available').length,
+      })
       setReservas(reservasData)
       setConfig(configData)
+      setDisponibilidade(disponibilidadeData)
       setTotalMesas(String(configData.totalMesas))
       setDuracaoMinutos(String(configData.duracaoReservaMinutos))
       setDuracaoLimpezaMinutos(String(configData.duracaoLimpezaMinutos))
+      setDuracaoReserva((current) => current || String(configData.duracaoReservaMinutos))
 
       const reservaEmLimpeza = reservasData.find((reserva) => reserva.emLimpeza && !alertasFechados.has(reserva.mesa))
       if (reservaEmLimpeza) {
@@ -133,7 +195,7 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }, [token, headers, alertasFechados])
+  }, [token, headers, dataReserva, horarioInicio, duracaoReserva, alertasFechados])
 
   useEffect(() => {
     loadData()
@@ -184,6 +246,7 @@ function App() {
     setDashboard(null)
     setReservas([])
     setConfig(null)
+    setDisponibilidade(null)
   }
 
   function closeLimpezaAlert() {
@@ -206,6 +269,39 @@ function App() {
       setError(err instanceof Error ? err.message : 'Erro ao salvar')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function confirmReservation() {
+    if (!selectedSeat) return
+
+    await submitAction(
+      () =>
+        request('/admin/reservas', {
+          method: 'POST',
+          body: JSON.stringify({
+            mesa: selectedSeat.mesa,
+            dataReserva,
+            horarioInicio,
+            duracaoMinutos: Number(duracaoReserva || config?.duracaoReservaMinutos),
+          }),
+        }),
+      `Mesa ${selectedSeat.mesa} reservada`,
+    )
+    setSelectedSeat(null)
+  }
+
+  async function handleSeatClick(seat: Seat) {
+    if (seat.status === 'available') {
+      setSelectedSeat(seat)
+      return
+    }
+
+    if (seat.status === 'reserved' && seat.reserva?.id) {
+      await submitAction(
+        () => request(`/admin/reservas/${seat.reserva?.id}`, { method: 'DELETE' }),
+        `Reserva da mesa ${seat.mesa} removida`,
+      )
     }
   }
 
@@ -275,13 +371,13 @@ function App() {
         </article>
         <article className="metric-card reserved">
           <CalendarClock size={24} />
-          <span>Reservadas</span>
+          <span>Ocupadas</span>
           <strong>{dashboard?.mesasReservadas ?? '-'}</strong>
         </article>
         <article className="metric-card">
           <Clock3 size={24} />
-          <span>Tempo de mesa</span>
-          <strong>{formatDuration(config?.duracaoReservaMinutos)}</strong>
+          <span>Duração</span>
+          <strong>{formatDuration(Number(duracaoReserva || config?.duracaoReservaMinutos))}</strong>
         </article>
         <article className="metric-card cleaning">
           <RefreshCcw size={24} />
@@ -311,94 +407,94 @@ function App() {
         </div>
       )}
 
+      {selectedSeat && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <section className="modal-panel">
+            <button className="icon-button modal-close" onClick={() => setSelectedSeat(null)} title="Fechar" type="button">
+              <X size={18} />
+            </button>
+            <div className="brand-mark">
+              <Table2 size={26} />
+            </div>
+            <h2>Mesa {selectedSeat.mesa}</h2>
+            <p>
+              Reserva em {formatDate(`${dataReserva}T${horarioInicio}:00`)} por{' '}
+              <strong>{formatDuration(Number(duracaoReserva || config?.duracaoReservaMinutos))}</strong>.
+            </p>
+            <button className="primary-button" onClick={confirmReservation} disabled={loading} type="button">
+              {loading ? <Loader2 className="spin" size={18} /> : <CheckCircle2 size={18} />}
+              Confirmar reserva
+            </button>
+          </section>
+        </div>
+      )}
+
       <section className="content-grid">
         <div className="panel reservations-panel">
           <div className="panel-header">
             <div>
-              <p className="eyebrow">Reservas ativas</p>
-              <h2>Mesas ocupadas</h2>
+              <p className="eyebrow">Mapa de disponibilidade</p>
+              <h2>Assentos</h2>
             </div>
             {loading && <Loader2 className="spin muted" size={20} />}
           </div>
 
           <form
-            className="inline-form"
+            className="booking-filters"
             onSubmit={(event) => {
               event.preventDefault()
-              submitAction(
-                () =>
-                  request('/admin/reservas', {
-                    method: 'POST',
-                    body: JSON.stringify({ mesa: Number(mesaManual) }),
-                  }),
-                'Reserva criada',
-              )
-              setMesaManual('')
+              loadData()
             }}
           >
-            <input
-              min="1"
-              placeholder="Numero da mesa"
-              type="number"
-              value={mesaManual}
-              onChange={(event) => setMesaManual(event.target.value)}
-            />
-            <button className="primary-button" type="submit" disabled={loading || !mesaManual}>
-              <Table2 size={18} />
-              Reservar
+            <label>
+              Data da reserva
+              <input type="date" value={dataReserva} onChange={(event) => setDataReserva(event.target.value)} />
+            </label>
+            <label>
+              Horário de início
+              <input type="time" value={horarioInicio} onChange={(event) => setHorarioInicio(event.target.value)} />
+            </label>
+            <label>
+              Duração em minutos
+              <input
+                min="1"
+                type="number"
+                value={duracaoReserva}
+                onChange={(event) => setDuracaoReserva(event.target.value)}
+              />
+            </label>
+            <button className="primary-button" type="submit" disabled={loading || !dataReserva || !horarioInicio}>
+              <RefreshCcw size={18} />
+              Atualizar
             </button>
           </form>
 
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Mesa</th>
-                  <th>Reserva</th>
-                  <th>Uso ate</th>
-                  <th>Libera</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {reservas.map((reserva) => (
-                  <tr key={reserva.mesa}>
-                    <td>{reserva.mesa}</td>
-                    <td>{formatDate(reserva.reservadoEm)}</td>
-                    <td>{formatDate(reserva.expiraEm)}</td>
-                    <td>{formatDate(reserva.liberaEm)}</td>
-                    <td>
-                      <span className={reserva.emLimpeza ? 'status-pill cleaning' : 'status-pill active'}>
-                        {reserva.emLimpeza ? 'Limpeza' : 'Em uso'}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        className="icon-button danger"
-                        onClick={() =>
-                          submitAction(
-                            () => request(`/admin/reservas/${reserva.mesa}`, { method: 'DELETE' }),
-                            'Reserva cancelada',
-                          )
-                        }
-                        title="Cancelar reserva"
-                        type="button"
-                      >
-                        <Trash2 size={17} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {!reservas.length && (
-                  <tr>
-                    <td colSpan={6} className="empty-state">
-                      Nenhuma reserva ativa
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="seat-legend" aria-label="Legenda dos assentos">
+            <span>
+              <i className="legend-dot available" /> Disponível
+            </span>
+            <span>
+              <i className="legend-dot reserved" /> Reservado
+            </span>
+            <span>
+              <i className="legend-dot blocked" /> Bloqueado
+            </span>
+          </div>
+
+          <div className="seat-map" aria-label="Mapa de assentos">
+            {disponibilidade?.assentos.map((seat) => (
+              <button
+                key={seat.mesa}
+                className={`seat-button ${seat.status}`}
+                type="button"
+                title={`Mesa ${seat.mesa}: ${seatLabel(seat.status)}`}
+                disabled={seat.status === 'blocked' || loading}
+                onClick={() => handleSeatClick(seat)}
+              >
+                <UtensilsCrossed size={18} />
+                <span>{seat.mesa}</span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -450,7 +546,7 @@ function App() {
             }}
           >
             <label>
-              Duracao em minutos
+              Duração padrão
               <input
                 min="1"
                 type="number"
@@ -493,6 +589,69 @@ function App() {
             </button>
           </form>
         </aside>
+      </section>
+
+      <section className="panel history-panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Reservas futuras e ativas</p>
+            <h2>Agenda</h2>
+          </div>
+        </div>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mesa</th>
+                <th>Reserva</th>
+                <th>Início</th>
+                <th>Uso até</th>
+                <th>Libera</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {reservas.map((reserva) => (
+                <tr key={reserva.id}>
+                  <td>{reserva.mesa}</td>
+                  <td>{formatDate(reserva.reservadoEm)}</td>
+                  <td>{formatDate(reserva.inicioEm)}</td>
+                  <td>{formatDate(reserva.expiraEm)}</td>
+                  <td>{formatDate(reserva.liberaEm)}</td>
+                  <td>
+                    <span className={reserva.emLimpeza ? 'status-pill cleaning' : 'status-pill active'}>
+                      {reserva.emLimpeza ? 'Limpeza' : 'Reservada'}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      className="icon-button danger"
+                      onClick={() =>
+                        submitAction(
+                          () => request(`/admin/reservas/${reserva.id}`, { method: 'DELETE' }),
+                          'Reserva cancelada',
+                        )
+                      }
+                      title="Cancelar reserva"
+                      type="button"
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!reservas.length && (
+                <tr>
+                  <td colSpan={7} className="empty-state">
+                    Nenhuma reserva ativa
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   )
