@@ -53,19 +53,44 @@ export const swaggerSpec = swaggerJsdoc({
         ReservaResponse: {
           type: "object",
           properties: {
+            id: { type: "integer", example: 42 },
             mesa: { type: "integer", example: 5 },
+            inicioEm: { type: "string", example: "11/06/2026 19:30:00" },
             expiraEm: { type: "string", example: "10/06/2026 21:30:00" },
-            liberaEm: { type: "string", example: "10/06/2026 21:45:00" }
+            liberaEm: { type: "string", example: "10/06/2026 21:45:00" },
+            duracaoMinutos: { type: "integer", example: 120 }
           }
         },
         ReservaAtiva: {
           type: "object",
           properties: {
+            id: { type: "integer", example: 42 },
             mesa: { type: "integer", example: 10 },
             reservadoEm: { type: "string", example: "10/06/2026 19:30:00" },
+            inicioEm: { type: "string", example: "11/06/2026 19:30:00" },
             expiraEm: { type: "string", example: "10/06/2026 21:30:00" },
             liberaEm: { type: "string", example: "10/06/2026 21:45:00" },
+            duracaoMinutos: { type: "integer", example: 120 },
             emLimpeza: { type: "boolean", example: false }
+          }
+        },
+        DisponibilidadeResponse: {
+          type: "object",
+          properties: {
+            totalMesas: { type: "integer", example: 70 },
+            dataReserva: { type: "string", example: "2026-06-11" },
+            horarioInicio: { type: "string", example: "19:30" },
+            duracaoMinutos: { type: "integer", example: 120 },
+            assentos: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  mesa: { type: "integer", example: 12 },
+                  status: { type: "string", enum: ["available", "reserved", "blocked"] }
+                }
+              }
+            }
           }
         },
         Message: {
@@ -113,6 +138,21 @@ export const swaggerSpec = swaggerJsdoc({
         get: {
           tags: ["API Externa"],
           security: [{ apiPinAuth: [] }],
+          requestBody: {
+            required: false,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    dataReserva: { type: "string", example: "2026-06-11" },
+                    horarioInicio: { type: "string", example: "19:30" },
+                    duracaoMinutos: { type: "integer", example: 120 }
+                  }
+                }
+              }
+            }
+          },
           responses: {
             "200": {
               description: "Status das mesas",
@@ -186,9 +226,12 @@ export const swaggerSpec = swaggerJsdoc({
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["mesa"],
+                  required: ["mesa", "dataReserva", "horarioInicio", "duracaoMinutos"],
                   properties: {
-                    mesa: { type: "integer", example: 10 }
+                    mesa: { type: "integer", example: 10 },
+                    dataReserva: { type: "string", example: "2026-06-11" },
+                    horarioInicio: { type: "string", example: "19:30" },
+                    duracaoMinutos: { type: "integer", example: 120 }
                   }
                 }
               }
@@ -207,14 +250,35 @@ export const swaggerSpec = swaggerJsdoc({
           }
         }
       },
-      "/admin/reservas/{mesa}": {
+      "/admin/reservas/disponibilidade": {
+        get: {
+          tags: ["Admin"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { in: "query", name: "dataReserva", required: true, schema: { type: "string", example: "2026-06-11" } },
+            { in: "query", name: "horarioInicio", required: true, schema: { type: "string", example: "19:30" } },
+            { in: "query", name: "duracaoMinutos", required: true, schema: { type: "integer", example: 120 } }
+          ],
+          responses: {
+            "200": {
+              description: "Mapa de disponibilidade",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/DisponibilidadeResponse" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/admin/reservas/{id}": {
         delete: {
           tags: ["Admin"],
           security: [{ bearerAuth: [] }],
           parameters: [
             {
               in: "path",
-              name: "mesa",
+              name: "id",
               required: true,
               schema: { type: "integer" }
             }

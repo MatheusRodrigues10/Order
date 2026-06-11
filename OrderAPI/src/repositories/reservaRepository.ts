@@ -8,12 +8,17 @@ export class ReservaRepository {
 
   list() {
     return prisma.reserva.findMany({
-      orderBy: { numeroMesa: "asc" }
+      where: {
+        liberaEm: {
+          gt: new Date()
+        }
+      },
+      orderBy: [{ inicioEm: "asc" }, { numeroMesa: "asc" }]
     });
   }
 
-  findByMesa(numeroMesa: number) {
-    return prisma.reserva.findUnique({ where: { numeroMesa } });
+  findById(id: number) {
+    return prisma.reserva.findUnique({ where: { id } });
   }
 
   findHighestReservedMesa() {
@@ -22,19 +27,49 @@ export class ReservaRepository {
     });
   }
 
-  create(numeroMesa: number, expiraEm: Date, liberaEm: Date) {
-    return prisma.reserva.create({
-      data: {
+  findConflicts(inicioEm: Date, fimEm: Date) {
+    return prisma.reserva.findMany({
+      where: {
+        inicioEm: {
+          lt: fimEm
+        },
+        liberaEm: {
+          gt: inicioEm
+        }
+      },
+      orderBy: [{ numeroMesa: "asc" }, { inicioEm: "asc" }]
+    });
+  }
+
+  findMesaConflicts(numeroMesa: number, inicioEm: Date, fimEm: Date) {
+    return prisma.reserva.findMany({
+      where: {
         numeroMesa,
-        expiraEm,
-        liberaEm
+        inicioEm: {
+          lt: fimEm
+        },
+        liberaEm: {
+          gt: inicioEm
+        }
       }
     });
   }
 
-  deleteByMesa(numeroMesa: number) {
+  create(numeroMesa: number, inicioEm: Date, expiraEm: Date, liberaEm: Date, duracaoMinutos: number) {
+    return prisma.reserva.create({
+      data: {
+        numeroMesa,
+        inicioEm,
+        expiraEm,
+        liberaEm,
+        duracaoMinutos
+      }
+    });
+  }
+
+  deleteById(id: number) {
     return prisma.reserva.delete({
-      where: { numeroMesa }
+      where: { id }
     });
   }
 
@@ -48,9 +83,14 @@ export class ReservaRepository {
     });
   }
 
-  async createIfFree(numeroMesa: number, expiraEm: Date, liberaEm: Date) {
+  async createIfFree(numeroMesa: number, inicioEm: Date, expiraEm: Date, liberaEm: Date, duracaoMinutos: number) {
+    const conflicts = await this.findMesaConflicts(numeroMesa, inicioEm, expiraEm);
+    if (conflicts.length > 0) {
+      return null;
+    }
+
     try {
-      return await this.create(numeroMesa, expiraEm, liberaEm);
+      return await this.create(numeroMesa, inicioEm, expiraEm, liberaEm, duracaoMinutos);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         return null;

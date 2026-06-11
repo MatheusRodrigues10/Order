@@ -27,12 +27,15 @@ model Admin {
 }
 
 model Reserva {
-  id          Int      @id @default(autoincrement())
-  numeroMesa  Int      @unique
-  reservadoEm DateTime @default(now())
-  expiraEm    DateTime
-  liberaEm    DateTime
+  id              Int      @id @default(autoincrement())
+  numeroMesa      Int
+  reservadoEm     DateTime @default(now())
+  inicioEm        DateTime
+  expiraEm        DateTime
+  liberaEm        DateTime
+  duracaoMinutos  Int
 
+  @@index([numeroMesa, inicioEm, expiraEm])
   @@index([liberaEm])
   @@map("reservas")
 }

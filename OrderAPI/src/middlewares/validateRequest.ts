@@ -13,7 +13,19 @@ export function validateRequest(schema: ZodSchema) {
       return next(parsed.error);
     }
 
-    Object.assign(request, parsed.data);
+    const data = parsed.data as {
+      body?: unknown;
+      params?: Record<string, unknown>;
+    };
+
+    if ("body" in data) {
+      request.body = data.body;
+    }
+
+    if (data.params) {
+      Object.assign(request.params, data.params);
+    }
+
     return next();
   };
 }

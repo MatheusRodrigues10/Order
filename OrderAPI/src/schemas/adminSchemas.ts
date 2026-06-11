@@ -2,13 +2,24 @@ import { z } from "zod";
 
 export const criarReservaSchema = z.object({
   body: z.object({
-    mesa: z.coerce.number().int().positive()
+    mesa: z.coerce.number().int().positive(),
+    dataReserva: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    horarioInicio: z.string().regex(/^\d{2}:\d{2}$/),
+    duracaoMinutos: z.coerce.number().int().positive()
   })
 });
 
-export const mesaParamSchema = z.object({
+export const reservaParamSchema = z.object({
   params: z.object({
-    mesa: z.coerce.number().int().positive()
+    id: z.coerce.number().int().positive()
+  })
+});
+
+export const disponibilidadeSchema = z.object({
+  query: z.object({
+    dataReserva: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    horarioInicio: z.string().regex(/^\d{2}:\d{2}$/),
+    duracaoMinutos: z.coerce.number().int().positive()
   })
 });
 

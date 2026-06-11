@@ -17,15 +17,29 @@ export class AdminController {
     return ok(response, result);
   }
 
+  async disponibilidade(request: Request, response: Response) {
+    const { dataReserva, horarioInicio, duracaoMinutos } = request.query;
+    const result = await reservaService.getDisponibilidade({
+      dataReserva: String(dataReserva),
+      horarioInicio: String(horarioInicio),
+      duracaoMinutos: Number(duracaoMinutos)
+    });
+    return ok(response, result);
+  }
+
   async criarReserva(request: Request, response: Response) {
-    const { mesa } = request.body;
-    const result = await reservaService.reserveSpecific(mesa);
+    const { mesa, dataReserva, horarioInicio, duracaoMinutos } = request.body;
+    const result = await reservaService.reserveSpecific(mesa, {
+      dataReserva,
+      horarioInicio,
+      duracaoMinutos
+    });
     return ok(response, result, 201);
   }
 
   async cancelarReserva(request: Request, response: Response) {
-    const mesa = Number(request.params.mesa);
-    await reservaService.cancel(mesa);
+    const id = Number(request.params.id);
+    await reservaService.cancel(id);
     return message(response, "Reserva cancelada com sucesso");
   }
 

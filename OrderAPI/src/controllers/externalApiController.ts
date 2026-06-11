@@ -10,8 +10,8 @@ export class ExternalApiController {
     return ok(response, result);
   }
 
-  async reservar(_request: Request, response: Response) {
-    const result = await reservaService.reserveAuto();
+  async reservar(request: Request, response: Response) {
+    const result = await reservaService.reserveAuto(request.body ?? {});
     return ok(response, result, 201);
   }
 }
