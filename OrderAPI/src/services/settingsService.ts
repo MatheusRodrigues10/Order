@@ -4,28 +4,44 @@ import { SettingsRepository } from "../repositories/settingsRepository";
 
 export class SettingsService {
   constructor(
-    private readonly settingsRepository = new SettingsRepository(),
-    private readonly reservaRepository = new ReservaRepository()
+    private readonly repo = new SettingsRepository(),
+    private readonly reservaRepo = new ReservaRepository()
   ) {}
 
   getSettings() {
-    return this.settingsRepository.find();
+    return this.repo.find();
   }
 
   async updateTotalMesas(totalMesas: number) {
-    const highestReserva = await this.reservaRepository.findHighestReservedMesa();
-    if (highestReserva && highestReserva.numeroMesa > totalMesas) {
+    const highest = await this.reservaRepo.findHighestReservedMesa();
+    if (highest && highest.numeroMesa > totalMesas) {
       throw new AppError("Existem reservas ativas acima da nova quantidade de mesas", 409);
     }
-
-    return this.settingsRepository.updateTotalMesas(totalMesas);
+    return this.repo.updateTotalMesas(totalMesas);
   }
 
-  updateDuracaoReservaMinutos(duracaoMinutos: number) {
-    return this.settingsRepository.updateDuracaoReservaMinutos(duracaoMinutos);
+  updateLugaresPorMesa(lugaresPorMesa: number) {
+    return this.repo.updateLugaresPorMesa(lugaresPorMesa);
   }
 
-  updateDuracaoLimpezaMinutos(duracaoMinutos: number) {
-    return this.settingsRepository.updateDuracaoLimpezaMinutos(duracaoMinutos);
+  updateDuracaoReservaMinutos(duracaoReservaMinutos: number) {
+    return this.repo.updateDuracaoReservaMinutos(duracaoReservaMinutos);
+  }
+
+  updateTempoLimpezaMinutos(tempoLimpezaMinutos: number) {
+    return this.repo.updateTempoLimpezaMinutos(tempoLimpezaMinutos);
+  }
+
+  async updateHorario(abertura: string, fechamento: string) {
+    const [abH, abM] = abertura.split(":").map(Number);
+    const [feH, feM] = fechamento.split(":").map(Number);
+    if (abH * 60 + abM >= feH * 60 + feM) {
+      throw new AppError("Horário de abertura deve ser anterior ao fechamento", 400);
+    }
+    return this.repo.updateHorario(abertura, fechamento);
+  }
+
+  updatePin(pin: string) {
+    return this.repo.updatePin(pin);
   }
 }

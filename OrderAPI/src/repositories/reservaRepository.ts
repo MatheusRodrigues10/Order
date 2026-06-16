@@ -1,19 +1,21 @@
-import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma";
 
-export class ReservaRepository {
-  count() {
-    return prisma.reserva.count();
-  }
+type ReservaData = {
+  numeroMesa: number;
+  grupoReservaId?: string;
+  quantidadePessoas: number;
+  nomeCliente?: string;
+  telefone?: string;
+  inicioReserva: Date;
+  fimReserva: Date;
+  fimLimpeza: Date;
+};
 
+export class ReservaRepository {
   list() {
     return prisma.reserva.findMany({
-      where: {
-        liberaEm: {
-          gt: new Date()
-        }
-      },
-      orderBy: [{ inicioEm: "asc" }, { numeroMesa: "asc" }]
+      where: { fimLimpeza: { gt: new Date() } },
+      orderBy: [{ inicioReserva: "asc" }, { numeroMesa: "asc" }]
     });
   }
 
@@ -21,81 +23,66 @@ export class ReservaRepository {
     return prisma.reserva.findUnique({ where: { id } });
   }
 
+  findConflicts(inicioReserva: Date, fimLimpeza: Date) {
+    return prisma.reserva.findMany({
+      where: {
+        inicioReserva: { lt: fimLimpeza },
+        fimLimpeza: { gt: inicioReserva }
+      },
+      orderBy: [{ numeroMesa: "asc" }, { inicioReserva: "asc" }]
+    });
+  }
+
+  findMesaConflicts(numeroMesa: number, inicioReserva: Date, fimLimpeza: Date) {
+    return prisma.reserva.findMany({
+      where: {
+        numeroMesa,
+        inicioReserva: { lt: fimLimpeza },
+        fimLimpeza: { gt: inicioReserva }
+      }
+    });
+  }
+
   findHighestReservedMesa() {
     return prisma.reserva.findFirst({
+      where: { fimLimpeza: { gt: new Date() } },
       orderBy: { numeroMesa: "desc" }
     });
   }
 
-  findConflicts(inicioEm: Date, fimEm: Date) {
-    return prisma.reserva.findMany({
+  countActiveMesas(now: Date) {
+    return prisma.reserva.groupBy({
+      by: ["numeroMesa"],
       where: {
-        inicioEm: {
-          lt: fimEm
-        },
-        liberaEm: {
-          gt: inicioEm
-        }
-      },
-      orderBy: [{ numeroMesa: "asc" }, { inicioEm: "asc" }]
-    });
-  }
-
-  findMesaConflicts(numeroMesa: number, inicioEm: Date, fimEm: Date) {
-    return prisma.reserva.findMany({
-      where: {
-        numeroMesa,
-        inicioEm: {
-          lt: fimEm
-        },
-        liberaEm: {
-          gt: inicioEm
-        }
+        inicioReserva: { lte: now },
+        fimLimpeza: { gt: now }
       }
     });
   }
 
-  create(numeroMesa: number, inicioEm: Date, expiraEm: Date, liberaEm: Date, duracaoMinutos: number) {
-    return prisma.reserva.create({
-      data: {
-        numeroMesa,
-        inicioEm,
-        expiraEm,
-        liberaEm,
-        duracaoMinutos
-      }
-    });
+  create(data: ReservaData) {
+    return prisma.reserva.create({ data });
   }
 
   deleteById(id: number) {
-    return prisma.reserva.delete({
-      where: { id }
-    });
+    return prisma.reserva.delete({ where: { id } });
+  }
+
+  deleteByGrupoId(grupoReservaId: string) {
+    return prisma.reserva.deleteMany({ where: { grupoReservaId } });
   }
 
   deleteExpired(now = new Date()) {
-    return prisma.reserva.deleteMany({
-      where: {
-        liberaEm: {
-          lte: now
-        }
-      }
-    });
+    return prisma.reserva.deleteMany({ where: { fimLimpeza: { lte: now } } });
   }
 
-  async createIfFree(numeroMesa: number, inicioEm: Date, expiraEm: Date, liberaEm: Date, duracaoMinutos: number) {
-    const conflicts = await this.findMesaConflicts(numeroMesa, inicioEm, expiraEm);
-    if (conflicts.length > 0) {
-      return null;
-    }
-
+  async createIfFree(data: ReservaData) {
+    const conflicts = await this.findMesaConflicts(data.numeroMesa, data.inicioReserva, data.fimLimpeza);
+    if (conflicts.length > 0) return null;
     try {
-      return await this.create(numeroMesa, inicioEm, expiraEm, liberaEm, duracaoMinutos);
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        return null;
-      }
-      throw error;
+      return await this.create(data);
+    } catch {
+      return null;
     }
   }
 }

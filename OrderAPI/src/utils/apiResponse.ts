@@ -1,9 +1,9 @@
 import type { Response } from "express";
 
-export function ok<T>(response: Response, data: T, statusCode = 200) {
-  return response.status(statusCode).json(data);
+export function ok<T>(res: Response, data: T, statusCode = 200) {
+  return res.status(statusCode).json({ success: true, data });
 }
 
-export function message(response: Response, text: string, statusCode = 200) {
-  return response.status(statusCode).json({ message: text });
+export function msg(res: Response, message: string, statusCode = 200) {
+  return res.status(statusCode).json({ success: true, message });
 }

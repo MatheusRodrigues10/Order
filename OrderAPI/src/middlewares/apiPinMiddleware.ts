@@ -1,17 +1,15 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../utils/AppError";
+import { SettingsRepository } from "../repositories/settingsRepository";
 
-export async function apiPinMiddleware(request: Request, _response: Response, next: NextFunction) {
-  try {
-    const pin = request.header("X-API-PIN");
-    const expectedPin = process.env.DEFAULT_API_PIN ?? "123456";
+const settingsRepo = new SettingsRepository();
 
-    if (!pin || pin !== expectedPin) {
-      throw new AppError("PIN da API inválido", 401);
-    }
+export async function apiPinMiddleware(req: Request, _res: Response, next: NextFunction) {
+  const pin = req.header("X-API-PIN");
+  if (!pin) throw new AppError("X-API-PIN é obrigatório", 401);
 
-    return next();
-  } catch (error) {
-    return next(error);
-  }
+  const settings = await settingsRepo.find();
+  if (pin !== settings.apiPin) throw new AppError("PIN inválido", 401);
+
+  next();
 }

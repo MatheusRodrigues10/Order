@@ -1,78 +1,119 @@
 import type { Request, Response } from "express";
 import { ReservaService } from "../services/reservaService";
 import { SettingsService } from "../services/settingsService";
-import { message, ok } from "../utils/apiResponse";
+import { MesaBloqueioService } from "../services/mesaBloqueioService";
+import { HorarioFuncionamentoService } from "../services/horarioFuncionamentoService";
+import { ok, msg } from "../utils/apiResponse";
 
-const reservaService = new ReservaService();
-const settingsService = new SettingsService();
+const reservaService             = new ReservaService();
+const settingsService            = new SettingsService();
+const mesaBloqueioService        = new MesaBloqueioService();
+const horarioFuncionamentoService = new HorarioFuncionamentoService();
 
 export class AdminController {
-  async dashboard(_request: Request, response: Response) {
-    const result = await reservaService.getStatus();
-    return ok(response, result);
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  async dashboard(_req: Request, res: Response) {
+    const data = await reservaService.getDashboard();
+    return ok(res, data);
   }
 
-  async listarReservas(_request: Request, response: Response) {
-    const result = await reservaService.listActive();
-    return ok(response, result);
+  // ── Reservas ─────────────────────────────────────────────────────────────────
+  async listarReservas(_req: Request, res: Response) {
+    const reservas = await reservaService.listActive();
+    return ok(res, reservas);
   }
 
-  async disponibilidade(request: Request, response: Response) {
-    const { dataReserva, horarioInicio, duracaoMinutos } = request.query;
-    const result = await reservaService.getDisponibilidade({
-      dataReserva: String(dataReserva),
-      horarioInicio: String(horarioInicio),
-      duracaoMinutos: Number(duracaoMinutos)
-    });
-    return ok(response, result);
+  async criarReserva(req: Request, res: Response) {
+    const { mesa, quantidadePessoas, data, hora, nomeCliente, telefone } = req.body;
+    const result = await reservaService.reserveSpecific(mesa, quantidadePessoas, data, hora, nomeCliente, telefone);
+    return ok(res, result, 201);
   }
 
-  async criarReserva(request: Request, response: Response) {
-    const { mesa, dataReserva, horarioInicio, duracaoMinutos } = request.body;
-    const result = await reservaService.reserveSpecific(mesa, {
-      dataReserva,
-      horarioInicio,
-      duracaoMinutos
-    });
-    return ok(response, result, 201);
-  }
-
-  async cancelarReserva(request: Request, response: Response) {
-    const id = Number(request.params.id);
+  async cancelarReserva(req: Request, res: Response) {
+    const id = Number(req.params.id);
     await reservaService.cancel(id);
-    return message(response, "Reserva cancelada com sucesso");
+    return msg(res, "Reserva cancelada com sucesso");
   }
 
-  async obterConfig(_request: Request, response: Response) {
+  // ── Mesas ─────────────────────────────────────────────────────────────────────
+  async listarMesas(_req: Request, res: Response) {
+    const mesas = await reservaService.listarMesas();
+    return ok(res, mesas);
+  }
+
+  async bloquearMesa(req: Request, res: Response) {
+    const numero = Number(req.params.numero);
+    const { bloqueadaPor, motivo } = req.body;
+    const result = await mesaBloqueioService.bloquear(numero, bloqueadaPor, motivo);
+    return ok(res, result, 201);
+  }
+
+  async desbloquearMesa(req: Request, res: Response) {
+    const numero = Number(req.params.numero);
+    await mesaBloqueioService.desbloquear(numero);
+    return msg(res, "Mesa desbloqueada com sucesso");
+  }
+
+  // ── Horários de Funcionamento ─────────────────────────────────────────────────
+  async listarHorarios(_req: Request, res: Response) {
+    const horarios = await horarioFuncionamentoService.listar();
+    return ok(res, horarios);
+  }
+
+  async salvarHorario(req: Request, res: Response) {
+    const dia   = Number(req.params.dia);
+    const turno = Number(req.params.turno);
+    const { horaAbertura, horaFechamento, ativo } = req.body;
+    const result = await horarioFuncionamentoService.salvar(dia, turno, horaAbertura, horaFechamento, ativo ?? true);
+    return ok(res, result);
+  }
+
+  async removerHorario(req: Request, res: Response) {
+    const dia   = Number(req.params.dia);
+    const turno = Number(req.params.turno);
+    await horarioFuncionamentoService.remover(dia, turno);
+    return msg(res, "Horário de funcionamento removido");
+  }
+
+  // ── Config ────────────────────────────────────────────────────────────────────
+  async obterConfig(_req: Request, res: Response) {
     const settings = await settingsService.getSettings();
-    return ok(response, {
-      totalMesas: settings.totalMesas,
-      duracaoReservaMinutos: settings.duracaoReservaMinutos,
-      duracaoLimpezaMinutos: settings.duracaoLimpezaMinutos
-    });
+    return ok(res, settings);
   }
 
-  async alterarTotalMesas(request: Request, response: Response) {
-    const { totalMesas } = request.body;
+  async alterarTotalMesas(req: Request, res: Response) {
+    const { totalMesas } = req.body;
     const settings = await settingsService.updateTotalMesas(totalMesas);
-    return ok(response, {
-      totalMesas: settings.totalMesas
-    });
+    return ok(res, { totalMesas: settings.totalMesas });
   }
 
-  async alterarExpiracao(request: Request, response: Response) {
-    const { duracaoMinutos } = request.body;
-    const settings = await settingsService.updateDuracaoReservaMinutos(duracaoMinutos);
-    return ok(response, {
-      duracaoReservaMinutos: settings.duracaoReservaMinutos
-    });
+  async alterarCapacidade(req: Request, res: Response) {
+    const { lugaresPorMesa } = req.body;
+    const settings = await settingsService.updateLugaresPorMesa(lugaresPorMesa);
+    return ok(res, { lugaresPorMesa: settings.lugaresPorMesa });
   }
 
-  async alterarLimpeza(request: Request, response: Response) {
-    const { duracaoMinutos } = request.body;
-    const settings = await settingsService.updateDuracaoLimpezaMinutos(duracaoMinutos);
-    return ok(response, {
-      duracaoLimpezaMinutos: settings.duracaoLimpezaMinutos
-    });
+  async alterarExpiracao(req: Request, res: Response) {
+    const { duracaoReservaMinutos } = req.body;
+    const settings = await settingsService.updateDuracaoReservaMinutos(duracaoReservaMinutos);
+    return ok(res, { duracaoReservaMinutos: settings.duracaoReservaMinutos });
+  }
+
+  async alterarLimpeza(req: Request, res: Response) {
+    const { tempoLimpezaMinutos } = req.body;
+    const settings = await settingsService.updateTempoLimpezaMinutos(tempoLimpezaMinutos);
+    return ok(res, { tempoLimpezaMinutos: settings.tempoLimpezaMinutos });
+  }
+
+  async alterarHorario(req: Request, res: Response) {
+    const { abertura, fechamento } = req.body;
+    const settings = await settingsService.updateHorario(abertura, fechamento);
+    return ok(res, { horarioAbertura: settings.horarioAbertura, horarioFechamento: settings.horarioFechamento });
+  }
+
+  async alterarPin(req: Request, res: Response) {
+    const { pin } = req.body;
+    await settingsService.updatePin(pin);
+    return msg(res, "PIN atualizado com sucesso");
   }
 }

@@ -1,7 +1,14 @@
 node_modules
 dist
+
+# Environment
 .env
 .env.*
 !.env.example
+
+# Logs
+*.log
+logs/
+
+# Coverage
 coverage
-npm-debug.log*
