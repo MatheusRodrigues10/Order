@@ -5,5 +5,5 @@ export interface OperatingHours {
   openingTime: string;
   closingTime: string;
   defaultReservationDuration: number; // minutes
-  defaultCleaningDuration: number;    // minutes
+  defaultCleaningDuration: number; // minutes
 }

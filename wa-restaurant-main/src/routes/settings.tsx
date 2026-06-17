@@ -20,13 +20,10 @@ function SettingsPage() {
     queryFn: api.admin.getConfig,
   });
 
-  const [totalMesas, setTotalMesas]             = useState("");
-  const [lugaresPorMesa, setLugares]            = useState("");
-  const [duracaoReservaMinutos, setDuracao]     = useState("");
-  const [tempoLimpezaMinutos, setLimpeza]       = useState("");
-  const [horarioAbertura, setAbertura]          = useState("");
-  const [horarioFechamento, setFechamento]      = useState("");
-  const [pin, setPin]                           = useState("");
+  const [totalMesas, setTotalMesas] = useState("");
+  const [lugaresPorMesa, setLugares] = useState("");
+  const [duracaoReservaMinutos, setDuracao] = useState("");
+  const [tempoLimpezaMinutos, setLimpeza] = useState("");
 
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -36,8 +33,6 @@ function SettingsPage() {
     setLugares(String(config.lugaresPorMesa));
     setDuracao(String(config.duracaoReservaMinutos));
     setLimpeza(String(config.tempoLimpezaMinutos));
-    setAbertura(config.horarioAbertura);
-    setFechamento(config.horarioFechamento);
   }, [config]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["config"] });
@@ -89,14 +84,28 @@ function SettingsPage() {
           <Button
             size="sm"
             disabled={saving === "mesas"}
-            onClick={() =>
+            onClick={() => {
+              const m = Number(totalMesas);
+              const l = Number(lugaresPorMesa);
+              if (!Number.isInteger(m) || m < 1) {
+                toast.error("Quantidade de mesas deve ser no mínimo 1");
+                return;
+              }
+              if (!Number.isInteger(l) || l < 1) {
+                toast.error("Cadeiras por mesa deve ser no mínimo 1");
+                return;
+              }
               save("mesas", async () => {
-                await api.admin.updateMesas(Number(totalMesas));
-                await api.admin.updateCapacidade(Number(lugaresPorMesa));
-              })
-            }
+                await api.admin.updateMesas(m);
+                await api.admin.updateCapacidade(l);
+              });
+            }}
           >
-            {saving === "mesas" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {saving === "mesas" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
             Salvar mesas
           </Button>
         </Section>
@@ -104,7 +113,7 @@ function SettingsPage() {
         {/* Tempos */}
         <Section title="Tempos padrão">
           <Field
-            label="Duração da reserva (min)"
+            label="Duração máxima da reserva (min)"
             type="number"
             value={duracaoReservaMinutos}
             onChange={setDuracao}
@@ -118,62 +127,29 @@ function SettingsPage() {
           <Button
             size="sm"
             disabled={saving === "tempos"}
-            onClick={() =>
+            onClick={() => {
+              const dur = Number(duracaoReservaMinutos);
+              const limp = Number(tempoLimpezaMinutos);
+              if (!Number.isInteger(dur) || dur < 30) {
+                toast.error("Duração mínima da reserva é 30 minutos");
+                return;
+              }
+              if (!Number.isInteger(limp) || limp < 1) {
+                toast.error("Tempo de limpeza deve ser no mínimo 1 minuto");
+                return;
+              }
               save("tempos", async () => {
-                await api.admin.updateExpiracao(Number(duracaoReservaMinutos));
-                await api.admin.updateLimpeza(Number(tempoLimpezaMinutos));
-              })
-            }
+                await api.admin.updateExpiracao(dur);
+                await api.admin.updateLimpeza(limp);
+              });
+            }}
           >
-            {saving === "tempos" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {saving === "tempos" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
             Salvar tempos
-          </Button>
-        </Section>
-
-        {/* Horários */}
-        <Section title="Horário de funcionamento">
-          <Field
-            label="Abertura"
-            type="time"
-            value={horarioAbertura}
-            onChange={setAbertura}
-          />
-          <Field
-            label="Fechamento"
-            type="time"
-            value={horarioFechamento}
-            onChange={setFechamento}
-          />
-          <Button
-            size="sm"
-            disabled={saving === "horario"}
-            onClick={() =>
-              save("horario", () =>
-                api.admin.updateHorario(horarioAbertura, horarioFechamento)
-              )
-            }
-          >
-            {saving === "horario" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Salvar horário
-          </Button>
-        </Section>
-
-        {/* PIN */}
-        <Section title="PIN da API externa">
-          <Field
-            label="PIN de acesso"
-            type="text"
-            value={pin}
-            onChange={setPin}
-            placeholder="Mínimo 4 caracteres"
-          />
-          <Button
-            size="sm"
-            disabled={saving === "pin" || pin.length < 4}
-            onClick={() => save("pin", () => api.admin.updatePin(pin))}
-          >
-            {saving === "pin" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Salvar PIN
           </Button>
         </Section>
       </div>

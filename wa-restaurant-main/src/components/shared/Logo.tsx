@@ -20,9 +20,7 @@ export function Logo({ compact = false, className = "" }: LogoProps) {
           <div className="font-display text-lg font-medium tracking-[0.18em] text-foreground">
             WA
           </div>
-          <div className="text-[10px] tracking-[0.32em] text-muted-foreground">
-            RESTAURANT
-          </div>
+          <div className="text-[10px] tracking-[0.32em] text-muted-foreground">RESTAURANT</div>
         </div>
       )}
     </div>

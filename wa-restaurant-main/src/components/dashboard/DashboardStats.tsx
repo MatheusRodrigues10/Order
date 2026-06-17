@@ -11,10 +11,30 @@ export function DashboardStats() {
   });
 
   const stats = [
-    { label: "Total de mesas",  value: data?.totalMesas ?? "—",      icon: Utensils,     tone: "text-foreground" },
-    { label: "Disponíveis",      value: data?.mesasLivres ?? "—",     icon: CheckCircle2, tone: "text-status-available" },
-    { label: "Reservadas",       value: data?.mesasReservadas ?? "—", icon: CalendarClock, tone: "text-status-reserved" },
-    { label: "Bloqueadas",       value: data?.mesasBloqueadas ?? "—",  icon: CircleSlash,  tone: "text-muted-foreground" },
+    {
+      label: "Total de mesas",
+      value: data?.totalMesas ?? "—",
+      icon: Utensils,
+      tone: "text-foreground",
+    },
+    {
+      label: "Disponíveis",
+      value: data?.mesasLivres ?? "—",
+      icon: CheckCircle2,
+      tone: "text-status-available",
+    },
+    {
+      label: "Reservadas",
+      value: data?.mesasReservadas ?? "—",
+      icon: CalendarClock,
+      tone: "text-status-reserved",
+    },
+    {
+      label: "Bloqueadas",
+      value: data?.mesasBloqueadas ?? "—",
+      icon: CircleSlash,
+      tone: "text-muted-foreground",
+    },
   ];
 
   return (

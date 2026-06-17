@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -142,14 +148,21 @@ export function TableActionsModal({ mesa, lugaresPorMesa = 4, open, onClose, onA
           {mesa.reserva && (
             <div className="rounded-md border border-border/60 bg-background/40 p-3 text-sm">
               <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                {mesa.status === "occupied" ? "Em andamento" : mesa.status === "cleaning" ? "Em limpeza" : "Próxima reserva"}
+                {mesa.status === "occupied"
+                  ? "Em andamento"
+                  : mesa.status === "cleaning"
+                    ? "Em limpeza"
+                    : "Próxima reserva"}
               </div>
               {mesa.reserva.nomeCliente && (
                 <div className="mt-1 font-medium text-foreground">{mesa.reserva.nomeCliente}</div>
               )}
               <div className="mt-0.5 text-foreground">
-                {mesa.reserva.quantidadePessoas} pessoa{mesa.reserva.quantidadePessoas !== 1 ? "s" : ""}
-                {mesa.reserva.telefone && <span className="ml-2 text-muted-foreground">· {mesa.reserva.telefone}</span>}
+                {mesa.reserva.quantidadePessoas} pessoa
+                {mesa.reserva.quantidadePessoas !== 1 ? "s" : ""}
+                {mesa.reserva.telefone && (
+                  <span className="ml-2 text-muted-foreground">· {mesa.reserva.telefone}</span>
+                )}
               </div>
               <div className="text-xs text-muted-foreground">
                 {formatHora(mesa.reserva.inicioReserva)} – {formatHora(mesa.reserva.fimReserva)}
@@ -158,7 +171,8 @@ export function TableActionsModal({ mesa, lugaresPorMesa = 4, open, onClose, onA
               {isGrouped && (
                 <div className="mt-1.5 flex items-center gap-1 text-[11px] text-gold/80">
                   <Link className="h-3 w-3" />
-                  Reserva ocupa as mesas {[mesa.numero, ...mesasJuntadas].sort((a, b) => a - b).join(", ")}
+                  Reserva ocupa as mesas{" "}
+                  {[mesa.numero, ...mesasJuntadas].sort((a, b) => a - b).join(", ")}
                 </div>
               )}
             </div>
@@ -182,7 +196,11 @@ export function TableActionsModal({ mesa, lugaresPorMesa = 4, open, onClose, onA
                 <Button variant="default" onClick={() => setOpenNew(true)} disabled={loading}>
                   <Plus /> Fazer reserva
                 </Button>
-                <Button variant="outline" onClick={() => setShowBloquearForm(true)} disabled={loading}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBloquearForm(true)}
+                  disabled={loading}
+                >
                   <Lock /> Bloquear mesa
                 </Button>
               </>
@@ -194,7 +212,14 @@ export function TableActionsModal({ mesa, lugaresPorMesa = 4, open, onClose, onA
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock />}
                   Confirmar bloqueio
                 </Button>
-                <Button variant="ghost" onClick={() => { setShowBloquearForm(false); setMotivoBloquear(""); }} disabled={loading}>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowBloquearForm(false);
+                    setMotivoBloquear("");
+                  }}
+                  disabled={loading}
+                >
                   Cancelar
                 </Button>
               </>
@@ -205,15 +230,27 @@ export function TableActionsModal({ mesa, lugaresPorMesa = 4, open, onClose, onA
                 <Button variant="outline" onClick={() => setOpenNew(true)} disabled={loading}>
                   <Plus /> Criar reserva futura
                 </Button>
-                <Button variant="ghost" className="text-destructive" onClick={handleCancelarReserva} disabled={loading}>
+                <Button
+                  variant="ghost"
+                  className="text-destructive"
+                  onClick={handleCancelarReserva}
+                  disabled={loading}
+                >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <X />}
-                  {isGrouped ? `Cancelar reserva (${mesasJuntadas.length + 1} mesas)` : "Cancelar reserva atual"}
+                  {isGrouped
+                    ? `Cancelar reserva (${mesasJuntadas.length + 1} mesas)`
+                    : "Cancelar reserva atual"}
                 </Button>
               </>
             )}
 
             {mesa.status === "cleaning" && mesa.reserva && (
-              <Button variant="ghost" className="text-destructive" onClick={handleCancelarReserva} disabled={loading}>
+              <Button
+                variant="ghost"
+                className="text-destructive"
+                onClick={handleCancelarReserva}
+                disabled={loading}
+              >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <X />}
                 Encerrar limpeza (cancelar reserva)
               </Button>

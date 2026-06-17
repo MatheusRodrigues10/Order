@@ -57,11 +57,7 @@ export function TablesGrid() {
               style={span > 1 ? { gridColumn: `span ${span}` } : undefined}
               className="flex"
             >
-              <TableCard
-                mesa={mesa}
-                lugaresPorMesa={lugaresPorMesa}
-                onClick={setSelected}
-              />
+              <TableCard mesa={mesa} lugaresPorMesa={lugaresPorMesa} onClick={setSelected} />
             </div>
           );
         })}

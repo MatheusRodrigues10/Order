@@ -19,10 +19,10 @@ function LoginPage() {
   const navigate = useNavigate();
   const setToken = useAuthStore((s) => s.setToken);
 
-  const [email, setEmail]       = useState("admin@restaurant.local");
+  const [email, setEmail] = useState("admin@restaurant.local");
   const [password, setPassword] = useState("");
-  const [showPwd, setShowPwd]   = useState(false);
-  const [loading, setLoading]   = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +66,10 @@ function LoginPage() {
           <div className="space-y-4">
             {/* E-mail */}
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <Label
+                htmlFor="email"
+                className="text-xs uppercase tracking-[0.18em] text-muted-foreground"
+              >
                 E-mail
               </Label>
               <Input
@@ -83,7 +86,10 @@ function LoginPage() {
 
             {/* Senha */}
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <Label
+                htmlFor="password"
+                className="text-xs uppercase tracking-[0.18em] text-muted-foreground"
+              >
                 Senha
               </Label>
               <div className="relative">
@@ -109,11 +115,7 @@ function LoginPage() {
             </div>
           </div>
 
-          <Button
-            type="submit"
-            className="mt-6 w-full"
-            disabled={loading}
-          >
+          <Button type="submit" className="mt-6 w-full" disabled={loading}>
             {loading ? "Entrando…" : "Entrar"}
           </Button>
         </form>

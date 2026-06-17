@@ -13,15 +13,17 @@ function formatHora(iso: string) {
 }
 
 export function UpcomingReservations() {
-  const { data: reservas = [], isLoading, refetch } = useQuery<Reserva[]>({
+  const {
+    data: reservas = [],
+    isLoading,
+    refetch,
+  } = useQuery<Reserva[]>({
     queryKey: ["reservas"],
     queryFn: api.admin.listarReservas,
     refetchInterval: 30_000,
   });
 
-  const upcoming = reservas
-    .filter((r) => new Date(r.fimLimpeza) > new Date())
-    .slice(0, 10);
+  const upcoming = reservas.filter((r) => new Date(r.fimLimpeza) > new Date()).slice(0, 10);
 
   return (
     <div className="rounded-md border border-border/60 bg-card">
@@ -36,13 +38,9 @@ export function UpcomingReservations() {
         </button>
       </div>
       <ul className="divide-y divide-border/60">
-        {isLoading && (
-          <li className="px-4 py-6 text-sm text-muted-foreground">Carregando…</li>
-        )}
+        {isLoading && <li className="px-4 py-6 text-sm text-muted-foreground">Carregando…</li>}
         {!isLoading && upcoming.length === 0 && (
-          <li className="px-4 py-6 text-sm text-muted-foreground">
-            Nenhuma reserva próxima.
-          </li>
+          <li className="px-4 py-6 text-sm text-muted-foreground">Nenhuma reserva próxima.</li>
         )}
         {upcoming.map((r) => (
           <li key={r.id} className="flex items-center gap-3 px-4 py-3">
@@ -56,10 +54,11 @@ export function UpcomingReservations() {
               </p>
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Users className="h-3 w-3" />
-                Mesa {r.numeroMesa} · {r.quantidadePessoas} pess.
+                Mesa {r.numeroMesa} · {r.quantidadePessoas} pessoa
+                {r.quantidadePessoas !== 1 ? "s" : ""}
               </p>
             </div>
-            <span className="rounded-full border border-gold/30 px-2 py-0.5 text-[10px] uppercase tracking-wider text-gold">
+            <span className="shrink-0 rounded-full border border-gold/30 px-2 py-0.5 text-[10px] uppercase tracking-wider text-gold">
               Reservada
             </span>
           </li>

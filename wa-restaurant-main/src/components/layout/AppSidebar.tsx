@@ -6,11 +6,11 @@ import { useAuthStore } from "@/features/auth/useAuthStore";
 import { toast } from "sonner";
 
 const NAV = [
-  { to: "/",                label: "Dashboard",     icon: LayoutDashboard },
-  { to: "/reservations",    label: "Reservas",      icon: BookMarked },
-  { to: "/calendar",        label: "Agenda",        icon: CalendarDays },
-  { to: "/operating-hours", label: "Funcionamento", icon: Clock4 },
-  { to: "/settings",        label: "Configurações", icon: Settings },
+  { to: "/", label: "Dashboard", shortLabel: "Início", icon: LayoutDashboard },
+  { to: "/reservations", label: "Reservas", shortLabel: "Reservas", icon: BookMarked },
+  { to: "/calendar", label: "Agenda", shortLabel: "Agenda", icon: CalendarDays },
+  { to: "/operating-hours", label: "Funcionamento", shortLabel: "Turnos", icon: Clock4 },
+  { to: "/settings", label: "Configurações", shortLabel: "Config.", icon: Settings },
 ] as const;
 
 function useLogout() {
@@ -92,7 +92,7 @@ export function BottomNav() {
               )}
             >
               <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
+              <span>{item.shortLabel}</span>
             </Link>
           );
         })}

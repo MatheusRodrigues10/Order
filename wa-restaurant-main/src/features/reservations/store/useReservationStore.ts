@@ -20,9 +20,7 @@ export const useReservationStore = create<ReservationStore>((set, get) => ({
 
   cancelReservation: (id) =>
     set((s) => ({
-      reservations: s.reservations.map((r) =>
-        r.id === id ? { ...r, status: "cancelled" } : r,
-      ),
+      reservations: s.reservations.map((r) => (r.id === id ? { ...r, status: "cancelled" } : r)),
     })),
 
   deleteReservation: (id) =>
@@ -30,6 +28,5 @@ export const useReservationStore = create<ReservationStore>((set, get) => ({
       reservations: s.reservations.filter((r) => r.id !== id),
     })),
 
-  getByTable: (tableId) =>
-    get().reservations.filter((r) => r.tableIds.includes(tableId)),
+  getByTable: (tableId) => get().reservations.filter((r) => r.tableIds.includes(tableId)),
 }));

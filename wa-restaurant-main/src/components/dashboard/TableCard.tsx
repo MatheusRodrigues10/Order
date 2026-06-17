@@ -8,7 +8,7 @@ const STATUS_LABELS: Record<MesaStatus, string> = {
   reserved: "Reservada",
   occupied: "Ocupada",
   blocked: "Bloqueada",
-  cleaning: "Limpeza",
+  cleaning: "Em limpeza",
 };
 
 const STATUS_RING: Record<MesaStatus, string> = {
@@ -65,9 +65,7 @@ export function TableCard({ mesa, lugaresPorMesa = 4, onClick }: TableCardProps)
         <div className="min-w-0">
           {/* Title */}
           <div className="font-display text-xl leading-none text-foreground">
-            {isGrouped
-              ? `Mesa ${allMesaNums.join(" · ")}`
-              : `Mesa ${mesa.numero}`}
+            {isGrouped ? `Mesa ${allMesaNums.join(" · ")}` : `Mesa ${mesa.numero}`}
           </div>
 
           {/* Capacity */}
@@ -105,7 +103,9 @@ export function TableCard({ mesa, lugaresPorMesa = 4, onClick }: TableCardProps)
               </p>
             )}
             <p className="text-[11px] text-muted-foreground">
-              {mesa.reserva.quantidadePessoas} pess. · {formatHora(mesa.reserva.inicioReserva)}
+              {mesa.reserva.quantidadePessoas} pessoa
+              {mesa.reserva.quantidadePessoas !== 1 ? "s" : ""} ·{" "}
+              {formatHora(mesa.reserva.inicioReserva)}
             </p>
           </div>
         )}

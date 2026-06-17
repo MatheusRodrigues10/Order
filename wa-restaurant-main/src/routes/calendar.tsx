@@ -34,7 +34,11 @@ function formatHora(iso: string) {
 
 function CalendarPage() {
   const queryClient = useQueryClient();
-  const { data: reservas = [], isLoading, refetch } = useQuery<Reserva[]>({
+  const {
+    data: reservas = [],
+    isLoading,
+    refetch,
+  } = useQuery<Reserva[]>({
     queryKey: ["reservas"],
     queryFn: api.admin.listarReservas,
     refetchInterval: 30_000,
@@ -45,12 +49,12 @@ function CalendarPage() {
 
   const sorted = useMemo(
     () => [...reservas].sort((a, b) => a.inicioReserva.localeCompare(b.inicioReserva)),
-    [reservas]
+    [reservas],
   );
 
   const hours = useMemo(
     () => Array.from({ length: 12 }, (_, i) => String(i + 11).padStart(2, "0")),
-    []
+    [],
   );
 
   const handleDelete = async () => {
@@ -76,7 +80,9 @@ function CalendarPage() {
         <header className="mb-8 flex items-end justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.32em] text-gold">Linha do tempo</p>
-            <h1 className="mt-1 font-display text-4xl text-foreground">Agenda do dia</h1>
+            <h1 className="mt-1 font-display text-3xl md:text-4xl text-foreground">
+              Agenda do dia
+            </h1>
           </div>
           <button
             type="button"
@@ -88,9 +94,7 @@ function CalendarPage() {
           </button>
         </header>
 
-        {isLoading && (
-          <p className="text-sm text-muted-foreground">Carregando agenda…</p>
-        )}
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando agenda…</p>}
 
         {!isLoading && (
           <div className="rounded-md border border-border/60 bg-card">
@@ -100,7 +104,7 @@ function CalendarPage() {
               return (
                 <div
                   key={h}
-                  className={`grid grid-cols-[80px_1fr] gap-4 px-4 py-4 ${
+                  className={`grid grid-cols-[60px_1fr] gap-3 px-3 py-4 sm:grid-cols-[80px_1fr] sm:gap-4 sm:px-4 ${
                     idx ? "border-t border-border/60" : ""
                   }`}
                 >
@@ -114,29 +118,31 @@ function CalendarPage() {
                     {slot.map((r) => (
                       <div
                         key={r.id}
-                        className="flex items-center justify-between rounded-md border border-gold/20 bg-background/40 px-3 py-2"
+                        className="flex flex-wrap items-center gap-2 rounded-md border border-gold/20 bg-background/40 px-3 py-2"
                       >
-                        <div>
-                          <div className="text-sm font-medium text-foreground">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium text-foreground">
                             {r.nomeCliente ?? `Mesa ${r.numeroMesa}`}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Users className="h-3 w-3" />
-                            {r.quantidadePessoas} pess.
+                            <Users className="h-3 w-3 shrink-0" />
+                            {r.quantidadePessoas} pessoa{r.quantidadePessoas !== 1 ? "s" : ""}
                             <span>· Mesa {r.numeroMesa}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex shrink-0 items-center gap-2">
                           <div className="flex items-center gap-1 text-xs text-foreground">
-                            <Clock className="h-3 w-3 text-gold" />
-                            {formatHora(r.inicioReserva)} – {formatHora(r.fimReserva)}
+                            <Clock className="h-3 w-3 shrink-0 text-gold" />
+                            <span className="whitespace-nowrap">
+                              {formatHora(r.inicioReserva)} – {formatHora(r.fimReserva)}
+                            </span>
                           </div>
 
                           <button
                             type="button"
                             onClick={() => setIdToDelete(r.id)}
-                            className="rounded-md p-2 text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
+                            className="rounded-md p-1.5 text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
                             title="Cancelar reserva"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -154,14 +160,14 @@ function CalendarPage() {
 
       <AlertDialog
         open={!!idToDelete}
-        onOpenChange={(open) => { if (!open) setIdToDelete(null); }}
+        onOpenChange={(open) => {
+          if (!open) setIdToDelete(null);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar reserva</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja cancelar esta reserva?
-            </AlertDialogDescription>
+            <AlertDialogTitle>Cancelar reserva?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
 
           <AlertDialogFooter>

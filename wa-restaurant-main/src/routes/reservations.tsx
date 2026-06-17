@@ -50,7 +50,11 @@ function formatData(iso: string) {
 
 function ReservationsPage() {
   const queryClient = useQueryClient();
-  const { data: reservas = [], isLoading, refetch } = useQuery<Reserva[]>({
+  const {
+    data: reservas = [],
+    isLoading,
+    refetch,
+  } = useQuery<Reserva[]>({
     queryKey: ["reservas"],
     queryFn: api.admin.listarReservas,
     refetchInterval: 30_000,
@@ -94,9 +98,7 @@ function ReservationsPage() {
           </button>
         </header>
 
-        {isLoading && (
-          <p className="text-sm text-muted-foreground">Carregando reservas…</p>
-        )}
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando reservas…</p>}
 
         {/* MOBILE */}
         {!isLoading && (
@@ -105,18 +107,13 @@ function ReservationsPage() {
               <p className="text-sm text-muted-foreground">Nenhuma reserva ativa.</p>
             )}
             {reservas.map((r) => (
-              <div
-                key={r.id}
-                className="rounded-md border border-border/60 bg-card p-4"
-              >
+              <div key={r.id} className="rounded-md border border-border/60 bg-card p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="font-medium text-foreground">
                       {r.nomeCliente ?? `Mesa ${r.numeroMesa}`}
                     </h3>
-                    {r.telefone && (
-                      <p className="text-sm text-muted-foreground">{r.telefone}</p>
-                    )}
+                    {r.telefone && <p className="text-sm text-muted-foreground">{r.telefone}</p>}
                   </div>
                   <span className="rounded-full border border-gold/30 px-2 py-0.5 text-[10px] uppercase tracking-wider text-gold">
                     Reservada
@@ -124,11 +121,21 @@ function ReservationsPage() {
                 </div>
 
                 <div className="mt-3 space-y-1 text-sm">
-                  <p><strong>Mesa:</strong> {r.numeroMesa}</p>
-                  <p><strong>Pessoas:</strong> {r.quantidadePessoas}</p>
-                  <p><strong>Data:</strong> {formatData(r.inicioReserva)}</p>
-                  <p><strong>Início:</strong> {formatHora(r.inicioReserva)}</p>
-                  <p><strong>Fim:</strong> {formatHora(r.fimReserva)}</p>
+                  <p>
+                    <strong>Mesa:</strong> {r.numeroMesa}
+                  </p>
+                  <p>
+                    <strong>Pessoas:</strong> {r.quantidadePessoas}
+                  </p>
+                  <p>
+                    <strong>Data:</strong> {formatData(r.inicioReserva)}
+                  </p>
+                  <p>
+                    <strong>Início:</strong> {formatHora(r.inicioReserva)}
+                  </p>
+                  <p>
+                    <strong>Fim:</strong> {formatHora(r.fimReserva)}
+                  </p>
                 </div>
 
                 <button
@@ -165,7 +172,10 @@ function ReservationsPage() {
                 <TableBody>
                   {reservas.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                      <TableCell
+                        colSpan={8}
+                        className="py-8 text-center text-sm text-muted-foreground"
+                      >
                         Nenhuma reserva ativa.
                       </TableCell>
                     </TableRow>
@@ -199,14 +209,14 @@ function ReservationsPage() {
 
       <AlertDialog
         open={!!idToDelete}
-        onOpenChange={(open) => { if (!open) setIdToDelete(null); }}
+        onOpenChange={(open) => {
+          if (!open) setIdToDelete(null);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar reserva?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
 
           <AlertDialogFooter>

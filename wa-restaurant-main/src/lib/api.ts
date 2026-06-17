@@ -24,7 +24,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
     super(message);
   }
 }
@@ -41,18 +44,17 @@ export const api = {
 
   // ── Admin ───────────────────────────────────────────────────────────────────
   admin: {
-    dashboard: () =>
-      request<DashboardData>("/admin/dashboard"),
+    dashboard: () => request<DashboardData>("/admin/dashboard"),
 
     // Reservas
-    listarReservas: () =>
-      request<Reserva[]>("/admin/reservas"),
+    listarReservas: () => request<Reserva[]>("/admin/reservas"),
 
     criarReserva: (body: {
       mesa: number;
       quantidadePessoas: number;
       data: string;
       hora: string;
+      duracaoMinutos?: number;
       nomeCliente?: string;
       telefone?: string;
     }) =>
@@ -61,12 +63,10 @@ export const api = {
         body: JSON.stringify(body),
       }),
 
-    cancelarReserva: (id: number) =>
-      request<void>(`/admin/reservas/${id}`, { method: "DELETE" }),
+    cancelarReserva: (id: number) => request<void>(`/admin/reservas/${id}`, { method: "DELETE" }),
 
     // Mesas
-    listarMesas: () =>
-      request<MesaInfo[]>("/admin/mesas"),
+    listarMesas: () => request<MesaInfo[]>("/admin/mesas"),
 
     bloquearMesa: (numero: number, bloqueadaPor: string, motivo?: string) =>
       request<MesaBloqueio>(`/admin/mesas/${numero}/bloquear`, {
@@ -78,10 +78,15 @@ export const api = {
       request<void>(`/admin/mesas/${numero}/bloquear`, { method: "DELETE" }),
 
     // Horários de Funcionamento
-    listarHorarios: () =>
-      request<HorarioFuncionamento[]>("/admin/horarios-funcionamento"),
+    listarHorarios: () => request<HorarioFuncionamento[]>("/admin/horarios-funcionamento"),
 
-    salvarHorario: (dia: number, turno: number, horaAbertura: string, horaFechamento: string, ativo = true) =>
+    salvarHorario: (
+      dia: number,
+      turno: number,
+      horaAbertura: string,
+      horaFechamento: string,
+      ativo = true,
+    ) =>
       request<HorarioFuncionamento>(`/admin/horarios-funcionamento/${dia}/${turno}`, {
         method: "PUT",
         body: JSON.stringify({ horaAbertura, horaFechamento, ativo }),
@@ -91,8 +96,7 @@ export const api = {
       request<void>(`/admin/horarios-funcionamento/${dia}/${turno}`, { method: "DELETE" }),
 
     // Config
-    getConfig: () =>
-      request<Config>("/admin/config"),
+    getConfig: () => request<Config>("/admin/config"),
 
     updateMesas: (totalMesas: number) =>
       request<{ totalMesas: number }>("/admin/config/mesas", {
@@ -154,6 +158,7 @@ export interface Reserva {
 }
 
 export interface ReservaResult {
+  ids: number[];
   mesas: number[];
   inicio: string;
   fim: string;
