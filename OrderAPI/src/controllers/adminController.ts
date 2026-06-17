@@ -24,8 +24,8 @@ export class AdminController {
   }
 
   async criarReserva(req: Request, res: Response) {
-    const { mesa, quantidadePessoas, data, hora, nomeCliente, telefone } = req.body;
-    const result = await reservaService.reserveSpecific(mesa, quantidadePessoas, data, hora, nomeCliente, telefone);
+    const { mesa, quantidadePessoas, data, hora, duracaoMinutos, nomeCliente, telefone } = req.body;
+    const result = await reservaService.reserveSpecific(mesa, quantidadePessoas, data, hora, nomeCliente, telefone, duracaoMinutos);
     return ok(res, result, 201);
   }
 

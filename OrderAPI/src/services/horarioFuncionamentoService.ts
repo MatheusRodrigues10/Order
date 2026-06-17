@@ -16,12 +16,27 @@ export class HorarioFuncionamentoService {
 
   async salvar(diaSemana: number, turno: number, horaAbertura: string, horaFechamento: string, ativo: boolean) {
     if (diaSemana < 0 || diaSemana > 6) {
-      throw new AppError("Dia da semana inválido (0=Dom a 6=Sab)", 400);
+      throw new AppError("Dia da semana inválido (0=Dom a 6=Sáb)", 400);
     }
     if (turno !== 1 && turno !== 2) {
       throw new AppError("Turno inválido — use 1 (Almoço) ou 2 (Jantar)", 400);
     }
     this.validateHoraPair(horaAbertura, horaFechamento);
+
+    // Se for turno 1, verificar se o novo fechamento não invade o turno 2 já configurado
+    if (turno === 1) {
+      const turno2 = await this.repo.findByDiaTurno(diaSemana, 2);
+      if (turno2 && turno2.ativo) {
+        const [f1H, f1M] = horaFechamento.split(":").map(Number);
+        const [ab2H, ab2M] = turno2.horaAbertura.split(":").map(Number);
+        if (f1H * 60 + f1M >= ab2H * 60 + ab2M) {
+          throw new AppError(
+            `Fim do 1º turno (${horaFechamento}) invade o início do 2º turno configurado (${turno2.horaAbertura}). Remova o 2º turno antes ou reduza o horário do 1º turno.`,
+            400
+          );
+        }
+      }
+    }
 
     // Se for turno 2, verificar se não há sobreposição com turno 1
     if (turno === 2) {

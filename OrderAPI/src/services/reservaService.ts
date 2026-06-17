@@ -195,7 +195,7 @@ export class ReservaService {
     }
 
     this.validarHorario(inicioReserva, fimLimpeza, settings.horarioAbertura, settings.horarioFechamento);
-    await this.horarioFuncionamentoService.validarHorarioReserva(inicioReserva, fimLimpeza);
+    await this.horarioFuncionamentoService.validarHorarioReserva(inicioReserva, fimReserva);
 
     const conflitos = await this.reservaRepo.findConflicts(inicioReserva, fimLimpeza);
     const mesasComConflito = new Set(conflitos.map((c) => c.numeroMesa));
@@ -215,6 +215,7 @@ export class ReservaService {
 
       if (reserva) {
         return {
+          ids: [reserva.id],
           mesas: [reserva.numeroMesa],
           inicio: reserva.inicioReserva,
           fim: reserva.fimReserva,
@@ -234,7 +235,8 @@ export class ReservaService {
     data: string,
     hora: string,
     nomeCliente?: string,
-    telefone?: string
+    telefone?: string,
+    duracaoMinutos?: number
   ) {
     await this.cleanupExpired();
     const settings = await this.settingsService.getSettings();
@@ -243,10 +245,18 @@ export class ReservaService {
       throw new AppError(`Mesa ${numeroMesa} não existe`, 400);
     }
 
+    const duracao = duracaoMinutos ?? settings.duracaoReservaMinutos;
+    if (duracao > settings.duracaoReservaMinutos) {
+      throw new AppError(
+        `Duração máxima permitida é ${settings.duracaoReservaMinutos} minutos`,
+        400
+      );
+    }
+
     const tablesNeeded = Math.ceil(quantidadePessoas / settings.lugaresPorMesa);
 
     const { inicioReserva, fimReserva, fimLimpeza } = this.calcularPeriodo(
-      data, hora, settings.duracaoReservaMinutos, settings.tempoLimpezaMinutos
+      data, hora, duracao, settings.tempoLimpezaMinutos
     );
 
     if (inicioReserva < new Date()) {
@@ -254,7 +264,7 @@ export class ReservaService {
     }
 
     this.validarHorario(inicioReserva, fimLimpeza, settings.horarioAbertura, settings.horarioFechamento);
-    await this.horarioFuncionamentoService.validarHorarioReserva(inicioReserva, fimLimpeza);
+    await this.horarioFuncionamentoService.validarHorarioReserva(inicioReserva, fimReserva);
 
     if (tablesNeeded <= 1) {
       // Single table reservation
@@ -275,6 +285,7 @@ export class ReservaService {
       }
 
       return {
+        ids: [reserva.id],
         mesas: [reserva.numeroMesa],
         inicio: reserva.inicioReserva,
         fim: reserva.fimReserva,
@@ -333,6 +344,7 @@ export class ReservaService {
     }
 
     return {
+      ids: reservasCriadas.map((r) => r.id),
       mesas: reservasCriadas.map((r) => r.numeroMesa),
       inicio: reservasCriadas[0].inicioReserva,
       fim: reservasCriadas[0].fimReserva,
