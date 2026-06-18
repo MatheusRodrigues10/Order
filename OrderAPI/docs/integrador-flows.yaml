@@ -1,0 +1,305 @@
+# Mapeamento determinístico dos fluxos de reserva — Integrador WA Restaurant
+# Baseado em wa_restaurant_whatsapp_1.html (cenários 0 e 1)
+#
+# Autenticação em todas as rotas: header X-API-PIN
+# Resposta padrão: { success: true, data: IntegradorStepResponse }
+
+meta:
+  html_source: wa_restaurant_whatsapp_1.html
+  fluxo_a_html: "Cenário 0 — Reserva semana atual (4 pessoas, sáb 20h, Ana Lima)"
+  fluxo_b_html: "Cenário 1 — Reserva outra data (8 pessoas, 10/07 19h30, Carlos Mendes)"
+  base_path: /api/integrador
+  auth_header: X-API-PIN
+
+elementos_html_mapeados:
+  formularios:
+    - nome: menu_inicial
+      tipo: quick_replies
+      opcoes: ["1 · Fazer uma reserva", "2 · Conhecer o restaurante", "3 · Reservar para um evento"]
+      rota_integrador: "IA escolhe fluxo reserva-a ou reserva-b após opção 1"
+    - nome: quantidade_pessoas
+      tipo: texto_livre
+      obrigatorio: true
+      rota_integrador: POST .../pessoas
+    - nome: selecao_horario_semana
+      tipo: texto_livre
+      rota_integrador: POST .../selecionar-horario
+    - nome: data_especifica
+      tipo: texto_livre
+      fluxo: reserva_b
+      rota_integrador: POST .../data-especifica
+    - nome: selecao_horario_data
+      tipo: texto_livre
+      fluxo: reserva_b
+      rota_integrador: POST .../selecionar-horario
+    - nome: nome_cliente
+      tipo: texto_livre
+      obrigatorio: true
+      rota_integrador: POST .../dados-cliente
+    - nome: confirmacao
+      tipo: quick_replies
+      opcoes: ["Sim, pode confirmar!", "Preciso alterar algo"]
+      rota_integrador: POST .../confirmar { confirmar: true|false }
+
+  eventos_api_html:
+    - label: "Consultando disponibilidade para N pessoas…"
+      rota_integrador: GET .../disponibilidade-semana
+    - label: "Consultando DD/MM para N pessoas…"
+      rota_integrador: GET .../disponibilidade-data
+
+  elementos_ocultos:
+    - sessionId: UUID gerado em iniciar — obrigatório em todas as etapas subsequentes
+    - etapaAtual: controlada pelo servidor — IA deve respeitar proximaEtapa
+    - mesasNecessarias: calculado internamente (ceil(pessoas/lugaresPorMesa))
+
+flows:
+  reserva_a:
+    descricao: Cliente escolhe horário entre opções da semana atual
+    - route: GET /api/integrador/fluxos
+      method: GET
+      input: {}
+      output:
+        reserva_a.etapas: lista ordenada de etapas
+        reserva_b.etapas: lista ordenada de etapas
+      next_step: POST /api/integrador/fluxos/reserva-a/iniciar
+      errors: [401 PIN inválido]
+
+    - route: POST /api/integrador/fluxos/reserva-a/iniciar
+      method: POST
+      input: {}
+      output:
+        sessionId: UUID
+        etapaAtual: informar_pessoas
+        proximaEtapa: disponibilidade_semana
+        conteudo.opcoesMenu: menu WhatsApp simulado
+      next_step: POST .../pessoas
+      errors: [401]
+
+    - route: POST /api/integrador/fluxos/reserva-a/:sessionId/pessoas
+      method: POST
+      input:
+        quantidadePessoas: integer (obrigatório, min 1)
+      output:
+        etapaAtual: disponibilidade_semana
+        proximaEtapa: selecionar_horario
+      next_step: GET .../disponibilidade-semana
+      errors: [400 quantidade inválida, 404 sessão expirada, 409 etapa incorreta]
+
+    - route: GET /api/integrador/fluxos/reserva-a/:sessionId/disponibilidade-semana
+      method: GET
+      input: {}
+      output:
+        conteudo.opcoes:
+          - data: YYYY-MM-DD
+            dataFormatada: "Qua 18/06"
+            diaSemana: string
+            horarios: ["19:00", "20:00", "21:00"]
+        etapasPermitidas: [selecionar_horario]
+      next_step: POST .../selecionar-horario
+      errors: [404 sem opções na semana, 409 etapa incorreta]
+
+    - route: POST /api/integrador/fluxos/reserva-a/:sessionId/selecionar-horario
+      method: POST
+      input:
+        data: YYYY-MM-DD (obrigatório)
+        hora: HH:MM (obrigatório)
+      output:
+        etapaAtual: informar_dados_cliente
+        proximaEtapa: resumo
+      next_step: POST .../dados-cliente
+      errors: [400 formato inválido, 409 horário indisponível, 409 etapa incorreta]
+
+    - route: POST /api/integrador/fluxos/reserva-a/:sessionId/dados-cliente
+      method: POST
+      input:
+        nomeCliente: string (obrigatório)
+        telefone: string (opcional)
+      output:
+        etapaAtual: resumo
+        proximaEtapa: confirmar
+      next_step: GET .../resumo
+      errors: [400 nome vazio, 409 etapa incorreta]
+
+    - route: GET /api/integrador/fluxos/reserva-a/:sessionId/resumo
+      method: GET
+      input: {}
+      output:
+        conteudo.resumo:
+          data, hora, quantidadePessoas, nomeCliente, endereco
+        conteudo.opcoesConfirmacao: ["Sim, pode confirmar!", "Preciso alterar algo"]
+        etapaAtual: confirmar
+      next_step: POST .../confirmar
+      errors: [409 dados incompletos]
+
+    - route: POST /api/integrador/fluxos/reserva-a/:sessionId/confirmar
+      method: POST
+      input:
+        confirmar: boolean (obrigatório)
+      output_confirmado:
+        etapaAtual: concluido
+        conteudo.reserva: ids, mesas, data, hora, nomeCliente, endereco, telefoneRestaurante
+      output_rejeitado:
+        etapaAtual: informar_dados_cliente
+      next_step: GET .../reserva (se confirmar=true)
+      errors: [409 nenhuma mesa disponível, 409 etapa incorreta]
+
+    - route: GET /api/integrador/fluxos/reserva-a/:sessionId/reserva
+      method: GET
+      input: {}
+      output:
+        conteudo.reserva: ReservaConfirmada completa
+      next_step: null
+      errors: [409 reserva não confirmada]
+
+    - route: GET /api/integrador/fluxos/reserva-a/:sessionId/estado
+      method: GET
+      input: {}
+      output:
+        etapaAtual, proximaEtapa, dados parciais da sessão
+      next_step: etapa indicada em proximaEtapa
+      errors: [404 sessão expirada]
+
+    - route: DELETE /api/integrador/fluxos/reserva-a/:sessionId
+      method: DELETE
+      input: {}
+      output: { message: "Sessão cancelada" }
+      next_step: POST .../iniciar (reinício)
+      errors: [404]
+
+  reserva_b:
+    descricao: Cliente pode recusar semana e pedir data específica
+    - route: POST /api/integrador/fluxos/reserva-b/iniciar
+      method: POST
+      input: {}
+      output:
+        sessionId: UUID
+        etapaAtual: informar_pessoas
+      next_step: POST .../pessoas
+      errors: [401]
+
+    - route: POST /api/integrador/fluxos/reserva-b/:sessionId/pessoas
+      method: POST
+      input:
+        quantidadePessoas: integer (obrigatório, min 1)
+      output:
+        etapaAtual: disponibilidade_semana
+      next_step: GET .../disponibilidade-semana
+      errors: [400, 404, 409]
+
+    - route: GET /api/integrador/fluxos/reserva-b/:sessionId/disponibilidade-semana
+      method: GET
+      input: {}
+      output:
+        conteudo.opcoes: slots da semana
+        etapasPermitidas: [selecionar_horario, informar_data_especifica]
+      next_step: |
+        Se cliente aceita semana → POST .../selecionar-horario
+        Se cliente pede outra data → POST .../data-especifica
+      errors: [404, 409]
+
+    - route: POST /api/integrador/fluxos/reserva-b/:sessionId/data-especifica
+      method: POST
+      input:
+        data: YYYY-MM-DD (obrigatório)
+      output:
+        etapaAtual: disponibilidade_data
+        proximaEtapa: selecionar_horario
+      next_step: GET .../disponibilidade-data
+      errors: [400 data inválida, 400 fluxo incorreto, 409 etapa incorreta]
+      dependencia: deve estar em disponibilidade_semana
+
+    - route: GET /api/integrador/fluxos/reserva-b/:sessionId/disponibilidade-data
+      method: GET
+      input: {}
+      output:
+        conteudo.opcao:
+          data, dataFormatada, horarios disponíveis na data informada
+        etapaAtual: selecionar_horario
+      next_step: POST .../selecionar-horario
+      errors: [404 sem horários na data, 409 sessão incompleta]
+      dependencia: POST .../data-especifica
+
+    - route: POST /api/integrador/fluxos/reserva-b/:sessionId/selecionar-horario
+      method: POST
+      input:
+        data: YYYY-MM-DD
+        hora: HH:MM
+      output:
+        etapaAtual: informar_dados_cliente
+      next_step: POST .../dados-cliente
+      errors: [409 horário indisponível]
+      dependencia: disponibilidade_semana OU disponibilidade_data
+
+    - route: POST /api/integrador/fluxos/reserva-b/:sessionId/dados-cliente
+      method: POST
+      input:
+        nomeCliente: string (obrigatório)
+        telefone: string (opcional)
+      output:
+        etapaAtual: resumo
+      next_step: GET .../resumo
+      errors: [400, 409]
+
+    - route: GET /api/integrador/fluxos/reserva-b/:sessionId/resumo
+      method: GET
+      input: {}
+      output:
+        conteudo.resumo + opcoesConfirmacao
+        etapaAtual: confirmar
+      next_step: POST .../confirmar
+      errors: [409]
+
+    - route: POST /api/integrador/fluxos/reserva-b/:sessionId/confirmar
+      method: POST
+      input:
+        confirmar: boolean
+      output:
+        reserva confirmada ou retorno a informar_dados_cliente
+      next_step: GET .../reserva
+      errors: [409 sem mesas]
+
+    - route: GET /api/integrador/fluxos/reserva-b/:sessionId/reserva
+      method: GET
+      input: {}
+      output:
+        conteudo.reserva: ReservaConfirmada
+      next_step: null
+      errors: [409]
+
+    - route: GET /api/integrador/fluxos/reserva-b/:sessionId/estado
+      method: GET
+      input: {}
+      output:
+        snapshot da sessão para recuperação
+      next_step: proximaEtapa
+      errors: [404]
+
+    - route: DELETE /api/integrador/fluxos/reserva-b/:sessionId
+      method: DELETE
+      input: {}
+      output: { message: "Sessão cancelada" }
+      next_step: POST .../iniciar
+      errors: [404]
+
+sequencia_deterministica:
+  reserva_a:
+    - POST /fluxos/reserva-a/iniciar
+    - POST /fluxos/reserva-a/:sessionId/pessoas
+    - GET  /fluxos/reserva-a/:sessionId/disponibilidade-semana
+    - POST /fluxos/reserva-a/:sessionId/selecionar-horario
+    - POST /fluxos/reserva-a/:sessionId/dados-cliente
+    - GET  /fluxos/reserva-a/:sessionId/resumo
+    - POST /fluxos/reserva-a/:sessionId/confirmar { confirmar: true }
+    - GET  /fluxos/reserva-a/:sessionId/reserva
+
+  reserva_b:
+    - POST /fluxos/reserva-b/iniciar
+    - POST /fluxos/reserva-b/:sessionId/pessoas
+    - GET  /fluxos/reserva-b/:sessionId/disponibilidade-semana
+    - POST /fluxos/reserva-b/:sessionId/data-especifica
+    - GET  /fluxos/reserva-b/:sessionId/disponibilidade-data
+    - POST /fluxos/reserva-b/:sessionId/selecionar-horario
+    - POST /fluxos/reserva-b/:sessionId/dados-cliente
+    - GET  /fluxos/reserva-b/:sessionId/resumo
+    - POST /fluxos/reserva-b/:sessionId/confirmar { confirmar: true }
+    - GET  /fluxos/reserva-b/:sessionId/reserva

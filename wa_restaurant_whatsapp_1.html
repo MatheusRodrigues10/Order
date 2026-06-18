@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WA Restaurant — Demo WhatsApp</title>
+<style>
+  :root {
+    --wa-bg: #111b21;
+    --wa-sidebar-bg: #111b21;
+    --wa-sidebar-header: #202c33;
+    --wa-chat-bg: #0b141a;
+    --wa-header-bg: #202c33;
+    --wa-input-bg: #202c33;
+    --wa-bubble-in: #202c33;
+    --wa-bubble-out: #005c4b;
+    --wa-green: #00a884;
+    --wa-green-light: #25d366;
+    --wa-text: #e9edef;
+    --wa-text-muted: #8696a0;
+    --wa-text-secondary: #aebac1;
+    --wa-divider: #222d34;
+    --wa-hover: #2a3942;
+    --wa-active: #2a3942;
+    --wa-tick: #53bdeb;
+    --wa-search-bg: #2a3942;
+    --wa-unread: #00a884;
+    --wa-border: #2a3942;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  body {
+    background: #000;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ── APP SHELL ─────────────────────────────── */
+  .app {
+    display: flex;
+    width: 100%;
+    max-width: 1100px;
+    height: 96vh;
+    max-height: 820px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.04);
+    background: var(--wa-bg);
+  }
+
+  /* ── SIDEBAR ───────────────────────────────── */
+  .sidebar {
+    width: 360px;
+    min-width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--wa-sidebar-bg);
+    border-right: 1px solid var(--wa-border);
+  }
+
+  .sidebar-header {
+    background: var(--wa-sidebar-header);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .sidebar-header .me {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #6b7280;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; color: #fff; font-weight: 600; cursor: pointer;
+    overflow: hidden;
+  }
+  .sidebar-header .me img { width: 100%; height: 100%; object-fit: cover; }
+  .sidebar-icons { display: flex; gap: 4px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--wa-text-muted); font-size: 20px;
+    transition: background .15s;
+  }
+  .icon-btn:hover { background: var(--wa-hover); }
+
+  .search-bar {
+    padding: 8px 12px;
+    background: var(--wa-sidebar-bg);
+    flex-shrink: 0;
+  }
+  .search-inner {
+    background: var(--wa-search-bg);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 7px 12px;
+    gap: 10px;
+  }
+  .search-inner svg { flex-shrink: 0; opacity: .6; }
+  .search-inner input {
+    background: transparent; border: none; outline: none;
+    color: var(--wa-text); font-size: 14px; width: 100%;
+    caret-color: var(--wa-green);
+  }
+  .search-inner input::placeholder { color: var(--wa-text-muted); }
+
+  .tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--wa-border);
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
+  .tab-item {
+    flex: 1; padding: 10px 4px; font-size: 12px; font-weight: 500;
+    text-align: center; cursor: pointer; color: var(--wa-text-muted);
+    border-bottom: 2px solid transparent; transition: color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .tab-item.active { color: var(--wa-green); border-bottom-color: var(--wa-green); }
+
+  .convo-list { flex: 1; overflow-y: auto; }
+  .convo-list::-webkit-scrollbar { width: 5px; }
+  .convo-list::-webkit-scrollbar-track { background: transparent; }
+  .convo-list::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+
+  .convo-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,.03);
+    transition: background .12s;
+    position: relative;
+  }
+  .convo-item:hover { background: var(--wa-hover); }
+  .convo-item.active { background: var(--wa-active); }
+  .convo-avatar {
+    width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #fff;
+  }
+  .convo-avatar.wa { background: #25d366; font-size: 13px; }
+  .convo-avatar.blue { background: #3b82f6; }
+  .convo-avatar.purple { background: #8b5cf6; }
+  .convo-avatar.orange { background: #f59e0b; }
+  .convo-avatar.pink { background: #ec4899; }
+
+  .convo-info { flex: 1; min-width: 0; }
+  .convo-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .convo-name { font-size: 15px; color: var(--wa-text); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .convo-time { font-size: 11px; color: var(--wa-text-muted); flex-shrink: 0; }
+  .convo-time.unread { color: var(--wa-unread); }
+  .convo-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .convo-preview { font-size: 13px; color: var(--wa-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+  .convo-badge {
+    background: var(--wa-unread); color: #fff;
+    font-size: 11px; font-weight: 600; min-width: 18px; height: 18px;
+    border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    padding: 0 5px; flex-shrink: 0;
+  }
+  .convo-muted { color: var(--wa-text-muted); font-size: 14px; }
+
+  /* ── CHAT AREA ─────────────────────────────── */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--wa-chat-bg);
+    background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.012' fill-rule='evenodd'%3E%3Cpath d='M0 0h40v40H0V0zm40 40h40v40H40V40zm0-40h2l-2 2V0zm0 4l4-4h2l-6 6V4zm0 4l8-8h2L40 10V8zm0 4L52 0h2L40 14v-2zm0 4L56 0h2L40 18v-2zm0 4L60 0h2L40 22v-2zm0 4L64 0h2L40 26v-2zm0 4L68 0h2L40 30v-2zm0 4L72 0h2L40 34v-2zm0 4L76 0h2L40 38v-2zm0 4L80 0v2L42 40h-2zm4 0L80 4v2L46 40h-2zm4 0L80 8v2L50 40h-2zm4 0L80 12v2L54 40h-2zm4 0L80 16v2L58 40h-2zm4 0L80 20v2L62 40h-2zm4 0L80 24v2L66 40h-2zm4 0L80 28v2L70 40h-2zm4 0L80 32v2L74 40h-2zm4 0L80 36v2L78 40h-2z'/%3E%3C/g%3E%3C/svg%3E");
+    position: relative;
+    min-width: 0;
+  }
+
+  /* Chat Header */
+  .chat-header {
+    background: var(--wa-header-bg);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 0 rgba(0,0,0,.3);
+    z-index: 2;
+  }
+  .chat-header-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #25d366;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff; cursor: pointer; flex-shrink: 0;
+  }
+  .chat-header-info { flex: 1; }
+  .chat-header-name { font-size: 15px; color: var(--wa-text); font-weight: 500; }
+  .chat-header-status { font-size: 12px; color: var(--wa-text-muted); }
+  .chat-header-status .online { color: var(--wa-green); }
+  .chat-header-actions { display: flex; gap: 2px; }
+
+  /* Scenario pill selector */
+  .scenario-bar {
+    background: rgba(0,0,0,.25);
+    padding: 8px 16px;
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    overflow-x: auto;
+  }
+  .scenario-bar::-webkit-scrollbar { display: none; }
+  .scenario-pill {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,.15);
+    color: var(--wa-text-muted);
+    background: transparent;
+    white-space: nowrap;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .scenario-pill.active {
+    background: var(--wa-green);
+    border-color: var(--wa-green);
+    color: #fff;
+  }
+  .scenario-pill:hover:not(.active) {
+    border-color: var(--wa-green);
+    color: var(--wa-green);
+  }
+
+  /* Messages */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 8%;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .chat-messages::-webkit-scrollbar { width: 5px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: #2a3942; border-radius: 4px; }
+
+  .date-chip {
+    text-align: center;
+    margin: 12px 0 8px;
+  }
+  .date-chip span {
+    background: #182229;
+    color: var(--wa-text-muted);
+    font-size: 12px;
+    padding: 5px 14px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    border: 1px solid rgba(255,255,255,.05);
+  }
+
+  .msg-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1px;
+  }
+  .msg-row.out { align-items: flex-end; }
+  .msg-row.in  { align-items: flex-start; }
+
+  .msg-sender {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    padding: 0 4px;
+    letter-spacing: .3px;
+  }
+  .msg-sender.ai-res  { color: #4ade80; }
+  .msg-sender.ai-info { color: #60a5fa; }
+  .msg-sender.ai-ev   { color: #fbbf24; }
+  .msg-sender.human   { color: #f472b6; }
+
+  .bubble {
+    max-width: 65%;
+    padding: 7px 12px 6px;
+    font-size: 14.2px;
+    line-height: 1.58;
+    position: relative;
+    word-break: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,.35);
+  }
+  .bubble.in {
+    background: var(--wa-bubble-in);
+    color: var(--wa-text);
+    border-radius: 0 10px 10px 10px;
+  }
+  .bubble.out {
+    background: var(--wa-bubble-out);
+    color: var(--wa-text);
+    border-radius: 10px 0 10px 10px;
+  }
+  .bubble .tail-in {
+    position: absolute; top: 0; left: -8px;
+    width: 0; height: 0;
+    border-top: 8px solid var(--wa-bubble-in);
+    border-left: 8px solid transparent;
+  }
+  .bubble .tail-out {
+    position: absolute; top: 0; right: -8px;
+    width: 0; height: 0;
+    border-top: 8px solid var(--wa-bubble-out);
+    border-right: 8px solid transparent;
+  }
+
+  .bubble-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 3px;
+  }
+  .bubble-time { font-size: 11px; color: #8696a0; }
+  .bubble-ticks { color: var(--wa-tick); font-size: 14px; line-height: 1; }
+
+  /* Quick reply options */
+  .quick-replies {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    padding-top: 6px;
+  }
+  .qr-btn {
+    color: #53bdeb;
+    font-size: 13.5px;
+    text-align: center;
+    padding: 6px 8px;
+    cursor: default;
+    border-radius: 6px;
+    font-weight: 400;
+    transition: background .1s;
+  }
+
+  /* API badge */
+  .api-call-row {
+    display: flex;
+    justify-content: center;
+    margin: 8px 0;
+  }
+  .api-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 11.5px;
+    color: #a5b4fc;
+    box-shadow: 0 2px 8px rgba(0,0,0,.4);
+  }
+  .api-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #818cf8;
+    animation: apipulse 1s infinite;
+    flex-shrink: 0;
+  }
+  @keyframes apipulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .3; transform: scale(.65); }
+  }
+
+  /* Typing indicator */
+  .typing-row { display: flex; align-items: flex-start; margin: 4px 0; }
+  .typing-bubble {
+    background: var(--wa-bubble-in);
+    border-radius: 0 10px 10px 10px;
+    padding: 12px 16px;
+    display: flex; gap: 5px; align-items: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,.35);
+    position: relative;
+  }
+  .typing-bubble .tail-in {
+    position: absolute; top: 0; left: -8px;
+    width: 0; height: 0;
+    border-top: 8px solid var(--wa-bubble-in);
+    border-left: 8px solid transparent;
+  }
+  .tdot {
+    width: 8px; height: 8px; border-radius: 50%; background: #8696a0;
+    animation: tdot .9s infinite;
+  }
+  .tdot:nth-child(2) { animation-delay: .15s; }
+  .tdot:nth-child(3) { animation-delay: .3s; }
+  @keyframes tdot { 0%,60%,100%{transform:translateY(0);opacity:.6} 30%{transform:translateY(-5px);opacity:1} }
+
+  /* Input bar */
+  .chat-input-wrap {
+    flex-shrink: 0;
+    background: var(--wa-input-bg);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 -1px 0 rgba(0,0,0,.2);
+  }
+  .input-icon-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--wa-text-muted);
+    transition: color .15s;
+    flex-shrink: 0;
+    font-size: 22px;
+  }
+  .input-icon-btn:hover { color: var(--wa-text); }
+  .input-field-wrap {
+    flex: 1;
+    background: var(--wa-search-bg);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    padding: 9px 16px;
+    gap: 10px;
+    min-height: 42px;
+  }
+  .input-field-wrap input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--wa-text); font-size: 14.5px;
+    caret-color: var(--wa-green); min-width: 0;
+  }
+  .input-field-wrap input::placeholder { color: var(--wa-text-muted); }
+  .send-btn {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--wa-green);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; font-size: 20px;
+    transition: background .15s, transform .1s;
+    box-shadow: 0 2px 8px rgba(0,168,132,.35);
+  }
+  .send-btn:hover { background: #008f72; }
+  .send-btn:active { transform: scale(.93); }
+
+  /* ── RESPONSIVE ────────────────────────────── */
+  @media (max-width: 700px) {
+    body { align-items: flex-start; }
+    .app { border-radius: 0; height: 100vh; max-height: none; }
+    .sidebar { display: none; }
+    .chat-area { min-width: 0; }
+    .bubble { max-width: 82%; }
+    .chat-messages { padding: 12px 4%; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { width: 260px; min-width: 220px; }
+    .convo-name { max-width: 130px; }
+    .convo-preview { max-width: 140px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="me">C</div>
+      <div class="sidebar-icons">
+        <div class="icon-btn" title="Comunidades">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M7 7m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0"/></svg>
+        </div>
+        <div class="icon-btn" title="Status">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="icon-btn" title="Nova conversa">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="10" y1="10" x2="14" y2="10"/></svg>
+        </div>
+        <div class="icon-btn" title="Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-bar">
+      <div class="search-inner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8696a0" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Pesquisar ou começar uma nova conversa" readonly>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item active">Todas</div>
+      <div class="tab-item">Não lidas</div>
+      <div class="tab-item">Favoritos</div>
+      <div class="tab-item">Grupos</div>
+    </div>
+
+    <div class="convo-list">
+      <div class="convo-item active" onclick="setTab(0)">
+        <div class="convo-avatar wa">WA</div>
+        <div class="convo-info">
+          <div class="convo-top">
+            <span class="convo-name">WA Restaurant 🍣</span>
+            <span class="convo-time unread">agora</span>
+          </div>
+          <div class="convo-bottom">
+            <span class="convo-preview">✅ Reserva confirmada!</span>
+            <span class="convo-badge">3</span>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+  </aside>
+
+  <!-- ── CHAT AREA ── -->
+  <main class="chat-area">
+    <div class="chat-header">
+      <div class="chat-header-avatar">WA</div>
+      <div class="chat-header-info">
+        <div class="chat-header-name">WA Restaurant 🍣</div>
+        <div class="chat-header-status"><span class="online">online agora</span> &nbsp;·&nbsp; Santana, São Paulo</div>
+      </div>
+      <div class="chat-header-actions">
+        <div class="icon-btn" title="Pesquisar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="icon-btn" title="Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scenario selector -->
+    <div class="scenario-bar">
+      <div class="scenario-pill active" onclick="setTab(0)">🪑 Reserva — semana atual</div>
+      <div class="scenario-pill" onclick="setTab(1)">📅 Reserva — outra data</div>
+      <div class="scenario-pill" onclick="setTab(2)">🎉 Evento</div>
+      <div class="scenario-pill" onclick="setTab(3)">ℹ️ Conhecer o restaurante</div>
+    </div>
+
+    <div class="chat-messages" id="chat">
+      <div class="date-chip"><span>Hoje</span></div>
+    </div>
+
+    <div class="chat-input-wrap">
+      <div class="input-icon-btn" title="Emoji">😊</div>
+      <div class="input-icon-btn" title="Anexar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </div>
+      <div class="input-field-wrap">
+        <input type="text" placeholder="Mensagem" readonly>
+      </div>
+      <div class="send-btn" onclick="replay()" title="Repetir conversa">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const now = new Date();
+const T = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+
+const scenes = [
+  // 0 — Reserva semana atual
+  [
+    {s:'bot', role:'', text:'Olá! Bem-vindo ao *WA Restaurant* 🍣\n\nSomos um restaurante japonês contemporâneo aqui em Santana, São Paulo. Como posso te ajudar?', opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento']},
+    {s:'user', text:'1 · Fazer uma reserva'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Ótimo! Pra eu já verificar a disponibilidade pra você, me diz: quantas pessoas virão ao restaurante?'},
+    {s:'user', text:'Somos 4 pessoas'},
+    {s:'api', label:'Consultando disponibilidade para 4 pessoas…'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Achei as opções disponíveis pra essa semana pra 4 pessoas:\n\n📅 Qua 18/06 — 19h ou 21h\n📅 Qui 19/06 — 20h\n📅 Sex 20/06 — 19h30 ou 21h\n📅 Sáb 21/06 — 19h, 20h ou 21h\n\nTem alguma que te agrada? Ou prefere outra data?'},
+    {s:'user', text:'Sábado às 20h tá ótimo!'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Perfeito! Pra finalizar, qual é o seu nome?'},
+    {s:'user', text:'Ana Lima'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Anotado, Ana! Confirma pra mim:\n\n📅 Sábado, 21/06\n🕗 20h00\n👥 4 pessoas\n👤 Ana Lima\n📍 R. Damásio Mascarenhas, 160 — Santana\n\nTá certinho assim?', opts:['Sim, pode confirmar!','Preciso alterar algo']},
+    {s:'user', text:'Sim, pode confirmar!'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Prontinho, Ana! Reserva confirmada ✅\n\nA gente te espera no sábado! Qualquer dúvida pode ligar: (11) 2978-5034 ou chamar aqui mesmo 😄🍣'},
+  ],
+  // 1 — Reserva outra data
+  [
+    {s:'bot', role:'', text:'Olá! Bem-vindo ao *WA Restaurant* 🍣\n\nSomos um restaurante japonês contemporâneo aqui em Santana, São Paulo. Como posso te ajudar?', opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento']},
+    {s:'user', text:'1 · Fazer uma reserva'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Ótimo! Pra eu já verificar a disponibilidade pra você, me diz: quantas pessoas virão ao restaurante?'},
+    {s:'user', text:'Somos 8 pessoas'},
+    {s:'api', label:'Consultando disponibilidade para 8 pessoas…'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Achei as opções dessa semana pra 8 pessoas:\n\n📅 Qui 19/06 — 20h\n📅 Sex 20/06 — 21h\n📅 Sáb 21/06 — 19h ou 21h\n\nTem alguma que funciona? Ou prefere uma data diferente?'},
+    {s:'user', text:'Prefiro dia 10 de julho, se possível'},
+    {s:'api', label:'Consultando 10/07 para 8 pessoas…'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Boa notícia! O dia 10/07 (quinta-feira) tem disponibilidade pra 8 pessoas nos horários:\n\n🕗 19h30\n🕗 21h00\n\nQual prefere?'},
+    {s:'user', text:'19h30 perfeito!'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Ótimo! E pra finalizar, qual é o seu nome?'},
+    {s:'user', text:'Carlos Mendes'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Tudo certo, Carlos! Olha o resumo:\n\n📅 Quinta, 10/07\n🕗 19h30\n👥 8 pessoas\n👤 Carlos Mendes\n📍 R. Damásio Mascarenhas, 160 — Santana\n\nConfirmo assim?', opts:['Sim, confirmar!','Quero alterar algo']},
+    {s:'user', text:'Sim, confirmar!'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Reserva confirmada, Carlos! ✅\n\nA gente tá ansioso pra receber vocês no dia 10! Qualquer dúvida: (11) 2978-5034 😄🍣'},
+  ],
+  // 2 — Evento
+  [
+    {s:'bot', role:'', text:'Olá! Bem-vindo ao *WA Restaurant* 🍣\n\nSomos um restaurante japonês contemporâneo aqui em Santana, São Paulo. Como posso te ajudar?', opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento']},
+    {s:'user', text:'3 · Reservar para um evento'},
+    {s:'bot', role:'ai-ev', label:'IA — Eventos', text:'Que legal, adoramos receber eventos! 🎉\n\nQual tipo de evento você está pensando?', opts:['Aniversário / festa','Confraternização de empresa','Casamento / noivado','Outro']},
+    {s:'user', text:'Confraternização de empresa'},
+    {s:'bot', role:'ai-ev', label:'IA — Eventos', text:'Boa escolha! Qual a data prevista?'},
+    {s:'user', text:'15 de julho'},
+    {s:'bot', role:'ai-ev', label:'IA — Eventos', text:'E quantos convidados aproximadamente?'},
+    {s:'user', text:'Umas 40 pessoas'},
+    {s:'bot', role:'ai-ev', label:'IA — Eventos', text:'Perfeito! Pra eventos acima de 20 pessoas temos pacotes exclusivos com menu omakase personalizado e experiência à la carte especial.\n\nJá vou te conectar com nossa equipe 👇'},
+    {s:'bot', role:'human', label:'Atendente — Carla', text:'Oi! Tudo bem? Sou a Carla, cuido dos eventos aqui no WA Restaurant 😊\n\nVi que vocês são cerca de 40 pessoas no dia 15/07 — essa data ainda tá disponível! Posso te ligar pra apresentar nossos pacotes? Ou se preferir: (11) 94180-3110'},
+    {s:'user', text:'Sim, pode ligar!'},
+    {s:'bot', role:'human', label:'Atendente — Carla', text:'Ótimo! Em instantes eu te ligo. Fica à vontade pra conferir nosso Instagram também: @warestaurant.sp 🍣'},
+  ],
+  // 3 — Conhecer
+  [
+    {s:'bot', role:'', text:'Olá! Bem-vindo ao *WA Restaurant* 🍣\n\nSomos um restaurante japonês contemporâneo aqui em Santana, São Paulo. Como posso te ajudar?', opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento']},
+    {s:'user', text:'2 · Conhecer o restaurante'},
+    {s:'bot', role:'ai-info', label:'IA — Informações', text:'Claro! O WA Restaurant é um japonês contemporâneo em Santana, SP, com culinária fusion que une o melhor da gastronomia asiática em ambiente moderno e sofisticado.\n\nO que você quer saber?', opts:['Cardápio','Horários e localização','Telefone e contato']},
+    {s:'user', text:'Cardápio'},
+    {s:'bot', role:'ai-info', label:'IA — Informações', text:'Trabalhamos com duas propostas:\n\n🍱 *À la carte* — pratos quentes, sushis, combinados, yakisoba, grelhados e bentôs\n\n👨‍🍳 *Omakase* — menu degustação exclusivo, com ingredientes selecionados pelo chef\n\nTem avaliação 4,7⭐ no Google com mais de 536 avaliações!'},
+    {s:'user', text:'Que horas vocês abrem?'},
+    {s:'bot', role:'ai-info', label:'IA — Informações', text:'Nosso horário de funcionamento:\n\n🍱 *Almoço:* Seg a Sáb das 12h às 15h\n🍣 *Jantar:* Seg a Sáb das 19h às 23h\n🔴 Domingo: fechado\n\n📍 R. Damásio Mascarenhas, 160 — Santana, São Paulo\n📞 (11) 2978-5034\n📲 (11) 94180-3110'},
+    {s:'user', text:'Quero fazer uma reserva!'},
+    {s:'bot', role:'ai-info', label:'IA — Informações', text:'Ótimo! Já vou te passar pro nosso agente de reservas 👇'},
+    {s:'bot', role:'ai-res', label:'IA — Reservas', text:'Oi! Pra eu verificar a disponibilidade, me diz: quantas pessoas virão ao restaurante? 😊'},
+  ],
+];
+
+let cur=0, timer=null, step=0;
+
+function setTab(i){
+  cur=i;
+  document.querySelectorAll('.scenario-pill').forEach((p,j)=>p.classList.toggle('active',j===i));
+  replay();
+}
+
+function replay(){
+  clearTimeout(timer); step=0;
+  const chat=document.getElementById('chat');
+  chat.innerHTML='<div class="date-chip"><span>Hoje</span></div>';
+  next();
+}
+
+function next(){
+  const msgs=scenes[cur];
+  if(step>=msgs.length) return;
+  const m=msgs[step];
+  const chat=document.getElementById('chat');
+
+  if(m.s==='api'){
+    const row=document.createElement('div');
+    row.className='api-call-row';
+    row.innerHTML='<div class="api-badge"><span class="api-dot"></span>'+m.label+'</div>';
+    chat.appendChild(row);
+    chat.scrollTop=chat.scrollHeight;
+    step++;
+    timer=setTimeout(()=>{ row.remove(); next(); }, 2400);
+    return;
+  }
+
+  if(m.s==='bot'){
+    const tr=document.createElement('div');
+    tr.className='typing-row';
+    tr.innerHTML='<div class="typing-bubble"><span class="tail-in"></span><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+    chat.appendChild(tr);
+    chat.scrollTop=chat.scrollHeight;
+    const delay=Math.min(800+m.text.length*13, 2100);
+    timer=setTimeout(()=>{ chat.removeChild(tr); addBubble(m); step++; timer=setTimeout(next,820); }, delay);
+  } else {
+    addBubble(m); step++; timer=setTimeout(next,680);
+  }
+}
+
+function addBubble(m){
+  const chat=document.getElementById('chat');
+  const row=document.createElement('div');
+  row.className='msg-row '+(m.s==='user'?'out':'in');
+
+  if(m.label){
+    const lbl=document.createElement('div');
+    lbl.className='msg-sender '+(m.role||'');
+    lbl.textContent=m.label;
+    row.appendChild(lbl);
+  }
+
+  const bub=document.createElement('div');
+  bub.className='bubble '+(m.s==='user'?'out':'in');
+  if(m.s!=='user') bub.innerHTML='<span class="tail-in"></span>';
+  else bub.innerHTML='<span class="tail-out"></span>';
+  bub.innerHTML+=m.text.replace(/\n/g,'<br>').replace(/\*(.*?)\*/g,'<strong>$1</strong>');
+
+  if(m.opts){
+    const qr=document.createElement('div');
+    qr.className='quick-replies';
+    m.opts.forEach(o=>{
+      const d=document.createElement('div');
+      d.className='qr-btn';
+      d.textContent=o;
+      qr.appendChild(d);
+    });
+    bub.appendChild(qr);
+  }
+
+  const meta=document.createElement('div');
+  meta.className='bubble-meta';
+  meta.innerHTML='<span class="bubble-time">'+T+'</span>'+(m.s==='user'?'<span class="bubble-ticks">✓✓</span>':'');
+  bub.appendChild(meta);
+
+  row.appendChild(bub);
+  chat.appendChild(row);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+next();
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * WA Restaurant — Design System
+ * Japanese contemporary, dark-first, premium feel.
+ * Palette: graphite, dark gray, ice white, matte gold, discreet red.
+ */
+
+@theme inline {
+  --font-display: "Cormorant Garamond", "Noto Serif JP", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-wa-red: var(--wa-red);
+  --color-wa-red-foreground: var(--wa-red-foreground);
+
+  --color-status-available: var(--status-available);
+  --color-status-reserved: var(--status-reserved);
+  --color-status-occupied: var(--status-occupied);
+  --color-status-blocked: var(--status-blocked);
+  --color-status-cleaning: var(--status-cleaning);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --shadow-elegant: 0 10px 40px -10px color-mix(in oklab, var(--gold) 18%, transparent);
+  --shadow-card: 0 1px 0 0 color-mix(in oklab, var(--gold) 8%, transparent) inset,
+    0 12px 32px -16px oklch(0 0 0 / 0.6);
+}
+
+/* Dark-first: defaults are dark. */
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(0.22 0 0);          /* #1F1F1F */
+  --foreground: oklch(0.97 0 0);          /* #F8F8F8 */
+
+  --card: oklch(0.27 0 0);                /* #2B2B2B */
+  --card-foreground: oklch(0.97 0 0);
+
+  --popover: oklch(0.24 0 0);
+  --popover-foreground: oklch(0.97 0 0);
+
+  --primary: oklch(0.76 0.085 82);        /* matte gold #C8A96A */
+  --primary-foreground: oklch(0.18 0 0);
+
+  --secondary: oklch(0.32 0 0);
+  --secondary-foreground: oklch(0.97 0 0);
+
+  --muted: oklch(0.30 0 0);
+  --muted-foreground: oklch(0.70 0 0);
+
+  --accent: oklch(0.34 0.02 80);
+  --accent-foreground: oklch(0.97 0 0);
+
+  --destructive: oklch(0.46 0.14 18);     /* WA red #8B1E2D */
+  --destructive-foreground: oklch(0.97 0 0);
+
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.12);
+  --ring: oklch(0.76 0.085 82);
+
+  --gold: oklch(0.76 0.085 82);
+  --gold-foreground: oklch(0.18 0 0);
+  --wa-red: oklch(0.46 0.14 18);
+  --wa-red-foreground: oklch(0.97 0 0);
+
+  /* Status tokens — desaturated, premium */
+  --status-available: oklch(0.72 0.12 155);   /* soft green */
+  --status-reserved: oklch(0.62 0.13 265);    /* indigo */
+  --status-occupied: oklch(0.55 0.16 18);     /* discreet red */
+  --status-blocked: oklch(0.50 0 0);          /* graphite */
+  --status-cleaning: oklch(0.76 0.085 82);    /* gold */
+
+  --chart-1: var(--gold);
+  --chart-2: var(--status-reserved);
+  --chart-3: var(--status-available);
+  --chart-4: var(--status-cleaning);
+  --chart-5: var(--wa-red);
+
+  --sidebar: oklch(0.19 0 0);
+  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-primary: var(--gold);
+  --sidebar-primary-foreground: oklch(0.18 0 0);
+  --sidebar-accent: oklch(0.27 0 0);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border: oklch(1 0 0 / 0.06);
+  --sidebar-ring: var(--gold);
+}
+
+/* Optional light overrides (kept for future); app forces dark by default. */
+.light {
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.18 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0 0);
+  --primary: oklch(0.55 0.10 82);
+  --primary-foreground: oklch(0.98 0 0);
+  --border: oklch(0.18 0 0 / 0.10);
+  --input: oklch(0.18 0 0 / 0.14);
+  --muted: oklch(0.94 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .font-display {
+    font-family: var(--font-display);
+    font-feature-settings: "ss01", "ss02";
+    letter-spacing: 0.01em;
+  }
+}
+
+/* Subtle textured background reminiscent of washi paper */
+.wa-grain {
+  background-image:
+    radial-gradient(circle at 20% 0%, color-mix(in oklab, var(--gold) 6%, transparent), transparent 40%),
+    radial-gradient(circle at 80% 100%, color-mix(in oklab, var(--wa-red) 5%, transparent), transparent 45%);
+}

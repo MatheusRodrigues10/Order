@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Settings {
+  id                    Int    @id @default(1)
+  totalMesas            Int    @default(70)
+  lugaresPorMesa        Int    @default(4)
+  duracaoReservaMinutos Int    @default(120)
+  tempoLimpezaMinutos   Int    @default(30)
+  horarioAbertura       String @default("11:00")
+  horarioFechamento     String @default("23:00")
+  apiPin                String @default("123456")
+
+  @@map("settings")
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("admins")
+}
+
+model Reserva {
+  id                Int      @id @default(autoincrement())
+  numeroMesa        Int
+  grupoReservaId    String?
+  quantidadePessoas Int
+  nomeCliente       String?
+  telefone          String?
+  inicioReserva     DateTime
+  fimReserva        DateTime
+  fimLimpeza        DateTime
+  createdAt         DateTime @default(now())
+
+  @@index([numeroMesa])
+  @@index([grupoReservaId])
+  @@index([inicioReserva])
+  @@index([fimLimpeza])
+  @@map("reservas")
+}
+
+model HorarioFuncionamento {
+  id             Int     @id @default(autoincrement())
+  diaSemana      Int
+  turno          Int     @default(1)
+  horaAbertura   String
+  horaFechamento String
+  ativo          Boolean @default(true)
+
+  @@unique([diaSemana, turno])
+  @@map("horarios_funcionamento")
+}
+
+model MesaBloqueada {
+  id           Int      @id @default(autoincrement())
+  numeroMesa   Int      @unique
+  bloqueadaPor String
+  motivo       String?
+  bloqueadaEm  DateTime @default(now())
+
+  @@map("mesas_bloqueadas")
+}
