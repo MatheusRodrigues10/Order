@@ -101,7 +101,7 @@ test("5 · Criar reserva válida via modal", async ({ page }) => {
   attachListeners(page);
 
   // Cleanup: cancela reservas anteriores de mesa 5 amanhã para evitar conflito
-  const listRes = await apiCall("/admin/reservas");
+  const listRes = await apiCall("/admin/reservations");
   if (listRes.ok) {
     const listJson = (await listRes.json()) as {
       data: Array<{ id: number; numeroMesa: number; inicioReserva: string }>;
@@ -109,7 +109,7 @@ test("5 · Criar reserva válida via modal", async ({ page }) => {
     const tmw = tomorrow();
     for (const r of listJson.data ?? []) {
       if (r.numeroMesa === 5 && r.inicioReserva.startsWith(tmw)) {
-        await apiCall(`/admin/reservas/${r.id}`, "DELETE");
+        await apiCall(`/admin/reservations/${r.id}`, "DELETE");
       }
     }
   }
@@ -142,7 +142,7 @@ test("5 · Criar reserva válida via modal", async ({ page }) => {
 
   const [response] = await Promise.all([
     page.waitForResponse(
-      (r) => r.url().includes("/admin/reservas") && r.request().method() === "POST",
+      (r) => r.url().includes("/admin/reservations") && r.request().method() === "POST",
       { timeout: 15_000 },
     ),
     dialog.locator('button:has-text("Confirmar reserva")').click(),
@@ -181,7 +181,7 @@ test("6 · Mesa 999 é rejeitada pelo frontend antes da requisição", async ({ 
 
   let requestMade = false;
   page.on("request", (r) => {
-    if (r.url().includes("/admin/reservas") && r.method() === "POST") requestMade = true;
+    if (r.url().includes("/admin/reservations") && r.method() === "POST") requestMade = true;
   });
 
   await dialog.locator('button:has-text("Confirmar reserva")').click();
@@ -259,7 +259,7 @@ test("9 · Cancelar reserva via página de reservas", async ({ page }) => {
   attachListeners(page);
 
   // Cleanup: cancela qualquer reserva anterior de execuções passadas na mesa 8 amanhã
-  const listRes = await apiCall("/admin/reservas");
+  const listRes = await apiCall("/admin/reservations");
   if (listRes.ok) {
     const listJson = (await listRes.json()) as {
       data: Array<{ id: number; numeroMesa: number; inicioReserva: string }>;
@@ -267,13 +267,13 @@ test("9 · Cancelar reserva via página de reservas", async ({ page }) => {
     const tmw = tomorrow();
     for (const r of listJson.data ?? []) {
       if (r.numeroMesa === 8 && r.inicioReserva.startsWith(tmw)) {
-        await apiCall(`/admin/reservas/${r.id}`, "DELETE");
+        await apiCall(`/admin/reservations/${r.id}`, "DELETE");
       }
     }
   }
 
   // Cria reserva via API (usa token cacheado)
-  const createRes = await apiCall("/admin/reservas", "POST", {
+  const createRes = await apiCall("/admin/reservations", "POST", {
     mesa: 8,
     quantidadePessoas: 2,
     data: tomorrow(),
@@ -309,7 +309,7 @@ test("9 · Cancelar reserva via página de reservas", async ({ page }) => {
   const [response] = await Promise.all([
     page.waitForResponse(
       (r) =>
-        r.url().includes(`/admin/reservas/${reservaId}`) && r.request().method() === "DELETE",
+        r.url().includes(`/admin/reservations/${reservaId}`) && r.request().method() === "DELETE",
     ),
     alertDialog.locator('button:has-text("Confirmar")').click(),
   ]);
@@ -364,7 +364,7 @@ test("11 · Desbloquear mesa bloqueada", async ({ page }) => {
   attachListeners(page);
 
   // Bloqueia mesa 20 via API (token cacheado)
-  await apiCall("/admin/mesas/20/bloquear", "POST", {
+  await apiCall("/admin/tables/20/block", "POST", {
     bloqueadaPor: "E2E Test",
     motivo: "Teste desbloqueio E2E",
   });

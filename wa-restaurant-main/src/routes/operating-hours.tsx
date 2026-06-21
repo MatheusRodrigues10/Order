@@ -34,7 +34,7 @@ function OperatingHoursPage() {
     isLoading,
     refetch,
   } = useQuery<HorarioFuncionamento[]>({
-    queryKey: ["horarios-funcionamento"],
+    queryKey: ["operating-hours"],
     queryFn: api.admin.listarHorarios,
   });
 
@@ -193,7 +193,7 @@ function OperatingHoursPage() {
     try {
       await api.admin.salvarHorario(dia, turno, form.horaAbertura, form.horaFechamento, form.ativo);
       toast.success(`${DAYS[dia]} — ${turno === 1 ? "Almoço" : "Jantar"} salvo`);
-      await queryClient.invalidateQueries({ queryKey: ["horarios-funcionamento"] });
+      await queryClient.invalidateQueries({ queryKey: ["operating-hours"] });
       cancelEditing(dia, turno);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Erro ao salvar horário");
@@ -208,7 +208,7 @@ function OperatingHoursPage() {
     try {
       await api.admin.removerHorario(dia, turno);
       toast.success(`Configuração removida`);
-      await queryClient.invalidateQueries({ queryKey: ["horarios-funcionamento"] });
+      await queryClient.invalidateQueries({ queryKey: ["operating-hours"] });
       cancelEditing(dia, turno);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Erro ao remover horário");

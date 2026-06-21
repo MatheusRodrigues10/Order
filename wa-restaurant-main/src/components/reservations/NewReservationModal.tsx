@@ -126,7 +126,7 @@ export function NewReservationModal({
   });
 
   const { data: horarios = [] } = useQuery<HorarioFuncionamento[]>({
-    queryKey: ["horarios-funcionamento"],
+    queryKey: ["operating-hours"],
     queryFn: api.admin.listarHorarios,
     staleTime: 300_000,
   });
@@ -343,9 +343,9 @@ export function NewReservationModal({
         result.mesas.length > 1 ? `Mesas ${result.mesas.join(", ")}` : `Mesa ${result.mesas[0]}`;
       toast.success(`${mesasLabel} reservada${result.mesas.length > 1 ? "s" : ""} com sucesso!`);
 
-      await queryClient.invalidateQueries({ queryKey: ["reservas"] });
+      await queryClient.invalidateQueries({ queryKey: ["reservations"] });
       await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      await queryClient.invalidateQueries({ queryKey: ["mesas"] });
+      await queryClient.invalidateQueries({ queryKey: ["tables"] });
       onSuccess?.();
       handleClose();
     } catch (err) {

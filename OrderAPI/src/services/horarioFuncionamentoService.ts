@@ -1,8 +1,8 @@
 import { AppError } from "../utils/AppError";
 import { HorarioFuncionamentoRepository } from "../repositories/horarioFuncionamentoRepository";
 
-const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-const TURNO_NOME: Record<number, string> = { 1: "Almoço", 2: "Jantar" };
+export const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+export const TURNO_NOME: Record<number, string> = { 1: "Almoço", 2: "Jantar" };
 
 export class HorarioFuncionamentoService {
   constructor(
@@ -61,6 +61,15 @@ export class HorarioFuncionamentoService {
     const existing = await this.repo.findByDiaTurno(diaSemana, turno);
     if (!existing) throw new AppError("Horário de funcionamento não encontrado", 404);
     await this.repo.delete(diaSemana, turno);
+  }
+
+  /**
+   * Retorna os turnos ativos configurados para um dia da semana, já formatados.
+   * Não aplica fallback — quem chama decide o que fazer se vier vazio.
+   */
+  async getTurnosAtivosDoDia(diaSemana: number) {
+    const horarios = await this.repo.findByDia(diaSemana);
+    return horarios.filter((h) => h.ativo).map(this.formatHorario);
   }
 
   /**

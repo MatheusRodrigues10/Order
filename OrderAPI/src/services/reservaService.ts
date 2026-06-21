@@ -3,7 +3,7 @@ import { AppError } from "../utils/AppError";
 import { ReservaRepository } from "../repositories/reservaRepository";
 import { MesaBloqueioRepository } from "../repositories/mesaBloqueioRepository";
 import { SettingsService } from "./settingsService";
-import { HorarioFuncionamentoService } from "./horarioFuncionamentoService";
+import { HorarioFuncionamentoService, DIAS_SEMANA } from "./horarioFuncionamentoService";
 import { formatDateTimeBr } from "../utils/dateFormat";
 
 export class ReservaService {
@@ -16,6 +16,31 @@ export class ReservaService {
 
   async cleanupExpired() {
     await this.reservaRepo.deleteExpired();
+  }
+
+  // ── Referência de data/hora para a IA (âncora de cálculo) ──────────────────
+
+  async getNow() {
+    const now = new Date();
+    const diaSemana = now.getDay();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const hoje = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const hora = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    const turnos = await this.horarioFuncionamentoService.getTurnosAtivosDoDia(diaSemana);
+
+    return {
+      hoje,
+      diaSemana,
+      diaSemanaNome: DIAS_SEMANA[diaSemana],
+      hora,
+      turnos: turnos.map((t) => ({
+        turno: t.turno,
+        turnoNome: t.turnoNome,
+        horaAbertura: t.horaAbertura,
+        horaFechamento: t.horaFechamento
+      }))
+    };
   }
 
   // ── Dashboard ───────────────────────────────────────────────────────────────
@@ -173,6 +198,107 @@ export class ReservaService {
     return { totalMesas: settings.totalMesas, mesasDisponiveis, mesasIndisponiveis };
   }
 
+  // ── Disponibilidade por intervalo de dias (external) ────────────────────────
+
+  async getDisponibilidade(
+    quantidadePessoas: number,
+    dataInicio?: string,
+    dataFim?: string,
+    duracaoMinutos?: number
+  ) {
+    await this.cleanupExpired();
+    const settings = await this.settingsService.getSettings();
+
+    this.validarCapacidade(quantidadePessoas, settings.lugaresPorMesa);
+
+    if (duracaoMinutos !== undefined && duracaoMinutos > settings.duracaoReservaMinutos) {
+      throw new AppError(
+        `Duração máxima permitida é ${settings.duracaoReservaMinutos} minutos`,
+        400
+      );
+    }
+    const duracaoDesejada = duracaoMinutos ?? settings.duracaoReservaMinutos;
+
+    const inicio = dataInicio ? this.parseData(dataInicio) : this.hojeAsData();
+    const fim = dataFim ? this.parseData(dataFim) : this.addDias(inicio, 6);
+
+    if (fim < inicio) {
+      throw new AppError("'dataFim' não pode ser anterior a 'dataInicio'", 400);
+    }
+
+    const totalDias = this.diffDias(inicio, fim) + 1;
+    if (totalDias > 14) {
+      throw new AppError("Intervalo máximo de consulta é 14 dias", 400);
+    }
+
+    const dias: Array<{
+      data: string;
+      diaSemanaNome: string;
+      horarios: Array<{ hora: string; duracaoMaximaMinutos: number }>;
+    }> = [];
+
+    for (let i = 0; i < totalDias; i++) {
+      const diaAtual = this.addDias(inicio, i);
+      const diaSemana = diaAtual.getDay();
+
+      let turnos = await this.horarioFuncionamentoService.getTurnosAtivosDoDia(diaSemana);
+      if (turnos.length === 0) {
+        // Sem turno configurado para o dia: cai no horário geral (política aberta)
+        turnos = [
+          {
+            id: 0,
+            diaSemana,
+            diaNome: DIAS_SEMANA[diaSemana],
+            turno: 0,
+            turnoNome: "Geral",
+            horaAbertura: settings.horarioAbertura,
+            horaFechamento: settings.horarioFechamento,
+            ativo: true
+          }
+        ];
+      }
+
+      const horariosDoDia: Array<{ hora: string; duracaoMaximaMinutos: number }> = [];
+
+      for (const turno of turnos) {
+        const candidatos = this.gerarSlotsCandidatos(diaAtual, turno.horaAbertura, turno.horaFechamento);
+
+        for (const slot of candidatos) {
+          const minutosAteFechamento = this.minutosAteFechamento(slot, diaAtual, turno.horaFechamento);
+          const duracaoMaximaSlot = Math.min(duracaoDesejada, minutosAteFechamento);
+
+          if (duracaoMaximaSlot < 30) continue; // janela curta demais pra valer a pena oferecer
+
+          if (slot < new Date()) continue; // não oferece horário que já passou
+
+          const fimLimpezaSlot = new Date(slot.getTime() + (duracaoMaximaSlot + settings.tempoLimpezaMinutos) * 60_000);
+          const conflitos = await this.reservaRepo.findConflicts(slot, fimLimpezaSlot);
+          const mesasComConflito = new Set(conflitos.map((c) => c.numeroMesa));
+
+          const temMesaLivre = mesasComConflito.size < settings.totalMesas;
+          if (!temMesaLivre) continue;
+
+          const pad = (n: number) => String(n).padStart(2, "0");
+          horariosDoDia.push({
+            hora: `${pad(slot.getHours())}:${pad(slot.getMinutes())}`,
+            duracaoMaximaMinutos: duracaoMaximaSlot
+          });
+        }
+      }
+
+      if (horariosDoDia.length > 0) {
+        const pad = (n: number) => String(n).padStart(2, "0");
+        dias.push({
+          data: `${diaAtual.getFullYear()}-${pad(diaAtual.getMonth() + 1)}-${pad(diaAtual.getDate())}`,
+          diaSemanaNome: DIAS_SEMANA[diaSemana],
+          horarios: horariosDoDia
+        });
+      }
+    }
+
+    return { dias };
+  }
+
   // ── Listar reservas ─────────────────────────────────────────────────────────
 
   async listActive() {
@@ -182,13 +308,28 @@ export class ReservaService {
 
   // ── Criar reserva automática ────────────────────────────────────────────────
 
-  async reserveAuto(quantidadePessoas: number, data: string, hora: string, nomeCliente?: string, telefone?: string) {
+  async reserveAuto(
+    quantidadePessoas: number,
+    data: string,
+    hora: string,
+    duracaoMinutos?: number,
+    nomeCliente?: string,
+    telefone?: string
+  ) {
     await this.cleanupExpired();
     const settings = await this.settingsService.getSettings();
 
     this.validarCapacidade(quantidadePessoas, settings.lugaresPorMesa);
 
-    const { inicioReserva, fimReserva, fimLimpeza } = this.calcularPeriodo(data, hora, settings.duracaoReservaMinutos, settings.tempoLimpezaMinutos);
+    if (duracaoMinutos !== undefined && duracaoMinutos > settings.duracaoReservaMinutos) {
+      throw new AppError(
+        `Duração máxima permitida é ${settings.duracaoReservaMinutos} minutos`,
+        400
+      );
+    }
+    const duracao = duracaoMinutos ?? settings.duracaoReservaMinutos;
+
+    const { inicioReserva, fimReserva, fimLimpeza } = this.calcularPeriodo(data, hora, duracao, settings.tempoLimpezaMinutos);
 
     if (inicioReserva < new Date()) {
       throw new AppError("Não é possível reservar em horário que já passou", 400);
@@ -412,5 +553,62 @@ export class ReservaService {
         400
       );
     }
+  }
+
+  private parseData(data: string): Date {
+    const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dataRegex.test(data)) {
+      throw new AppError("Formato de data inválido, use YYYY-MM-DD", 400);
+    }
+    const [y, mo, d] = data.split("-").map(Number);
+    const parsed = new Date(y, mo - 1, d, 0, 0, 0, 0);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new AppError("Data inválida", 400);
+    }
+    return parsed;
+  }
+
+  private hojeAsData(): Date {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  }
+
+  private addDias(data: Date, dias: number): Date {
+    const result = new Date(data);
+    result.setDate(result.getDate() + dias);
+    return result;
+  }
+
+  private diffDias(inicio: Date, fim: Date): number {
+    const msPerDay = 24 * 60 * 60 * 1000;
+    return Math.round((fim.getTime() - inicio.getTime()) / msPerDay);
+  }
+
+  /**
+   * Gera horários candidatos de 30 em 30 minutos dentro de um turno, para um dia específico.
+   */
+  private gerarSlotsCandidatos(dia: Date, horaAbertura: string, horaFechamento: string): Date[] {
+    const [abH, abM] = horaAbertura.split(":").map(Number);
+    const [feH, feM] = horaFechamento.split(":").map(Number);
+
+    const slots: Date[] = [];
+    let cursor = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), abH, abM, 0, 0);
+    const fechamento = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), feH, feM, 0, 0);
+
+    while (cursor < fechamento) {
+      slots.push(new Date(cursor));
+      cursor = new Date(cursor.getTime() + 30 * 60_000);
+    }
+
+    return slots;
+  }
+
+  /**
+   * Minutos entre um horário candidato e o fechamento do turno correspondente.
+   */
+  private minutosAteFechamento(slot: Date, dia: Date, horaFechamento: string): number {
+    const [feH, feM] = horaFechamento.split(":").map(Number);
+    const fechamento = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), feH, feM, 0, 0);
+    return Math.floor((fechamento.getTime() - slot.getTime()) / 60_000);
   }
 }

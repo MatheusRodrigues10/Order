@@ -20,8 +20,18 @@ export const reservarExternalSchema = z.object({
     quantidadePessoas: z.coerce.number().int().min(1),
     data: z.string().regex(dataRegex, "Formato YYYY-MM-DD"),
     hora: z.string().regex(horaRegex, "Formato HH:MM"),
+    duracaoMinutos: z.coerce.number().int().min(30).optional(),
     nomeCliente: z.string().min(1).max(120).optional(),
     telefone: z.string().min(1).max(30).optional()
+  })
+});
+
+export const disponibilidadeQuerySchema = z.object({
+  query: z.object({
+    quantidadePessoas: z.coerce.number().int().min(1),
+    duracaoMinutos: z.coerce.number().int().min(30).optional(),
+    dataInicio: z.string().regex(dataRegex, "Formato YYYY-MM-DD").optional(),
+    dataFim: z.string().regex(dataRegex, "Formato YYYY-MM-DD").optional()
   })
 });
 

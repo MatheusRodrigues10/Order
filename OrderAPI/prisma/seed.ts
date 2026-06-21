@@ -7,8 +7,13 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("=== Seed WA Restaurant ===");
 
-  const email    = process.env.ADMIN_EMAIL    ?? "admin@restaurant.local";
-  const password = process.env.ADMIN_PASSWORD ?? "Admin@123456";
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    console.error("ADMIN_EMAIL e ADMIN_PASSWORD precisam estar definidos no .env para criar o admin.");
+    process.exit(1);
+  }
 
   // ── Settings ────────────────────────────────────────────────────────────────
   await prisma.settings.upsert({

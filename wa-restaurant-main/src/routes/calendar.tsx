@@ -39,7 +39,7 @@ function CalendarPage() {
     isLoading,
     refetch,
   } = useQuery<Reserva[]>({
-    queryKey: ["reservas"],
+    queryKey: ["reservations"],
     queryFn: api.admin.listarReservas,
     refetchInterval: 30_000,
   });
@@ -63,9 +63,9 @@ function CalendarPage() {
     try {
       await api.admin.cancelarReserva(idToDelete);
       toast.success("Reserva cancelada com sucesso");
-      await queryClient.invalidateQueries({ queryKey: ["reservas"] });
+      await queryClient.invalidateQueries({ queryKey: ["reservations"] });
       await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      await queryClient.invalidateQueries({ queryKey: ["mesas"] });
+      await queryClient.invalidateQueries({ queryKey: ["tables"] });
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Erro ao cancelar reserva");
     } finally {

@@ -49,8 +49,8 @@ POST /admin/login
 Content-Type: application/json
 
 {
-  "email": "admin@restaurant.local",
-  "password": "Admin@123456"
+  "email": "seu-email@exemplo.com",
+  "password": "sua-senha"
 }
 ```
 
@@ -70,18 +70,30 @@ X-API-PIN: 123456
 
 API externa:
 
+- `GET /api/now`
 - `GET /api/status`
-- `POST /api/reservar`
+- `GET /api/availability`
+- `POST /api/reservations`
 
 Admin:
 
 - `POST /admin/login`
 - `GET /admin/dashboard`
-- `GET /admin/reservas`
-- `POST /admin/reservas`
-- `DELETE /admin/reservas/:mesa`
-- `PUT /admin/config/mesas`
-- `PUT /admin/config/expiracao`
+- `GET /admin/reservations`
+- `POST /admin/reservations`
+- `DELETE /admin/reservations/:id`
+- `GET /admin/tables`
+- `POST /admin/tables/:numero/block`
+- `DELETE /admin/tables/:numero/block`
+- `GET /admin/operating-hours`
+- `PUT /admin/operating-hours/:dia/:turno`
+- `DELETE /admin/operating-hours/:dia/:turno`
+- `GET /admin/config`
+- `PUT /admin/config/tables`
+- `PUT /admin/config/capacity`
+- `PUT /admin/config/duration`
+- `PUT /admin/config/cleanup`
+- `PUT /admin/config/hours`
 - `PUT /admin/config/pin`
 
 ## Docker
