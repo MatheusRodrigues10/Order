@@ -13,6 +13,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReservationsRouteImport } from './routes/reservations'
 import { Route as OperatingHoursRouteImport } from './routes/operating-hours'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as EventDaysRouteImport } from './routes/event-days'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -36,6 +37,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventDaysRoute = EventDaysRouteImport.update({
+  id: '/event-days',
+  path: '/event-days',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CalendarRoute = CalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
@@ -50,6 +56,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
+  '/event-days': typeof EventDaysRoute
   '/login': typeof LoginRoute
   '/operating-hours': typeof OperatingHoursRoute
   '/reservations': typeof ReservationsRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
+  '/event-days': typeof EventDaysRoute
   '/login': typeof LoginRoute
   '/operating-hours': typeof OperatingHoursRoute
   '/reservations': typeof ReservationsRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
+  '/event-days': typeof EventDaysRoute
   '/login': typeof LoginRoute
   '/operating-hours': typeof OperatingHoursRoute
   '/reservations': typeof ReservationsRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/calendar'
+    | '/event-days'
     | '/login'
     | '/operating-hours'
     | '/reservations'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/calendar'
+    | '/event-days'
     | '/login'
     | '/operating-hours'
     | '/reservations'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/calendar'
+    | '/event-days'
     | '/login'
     | '/operating-hours'
     | '/reservations'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarRoute: typeof CalendarRoute
+  EventDaysRoute: typeof EventDaysRoute
   LoginRoute: typeof LoginRoute
   OperatingHoursRoute: typeof OperatingHoursRoute
   ReservationsRoute: typeof ReservationsRoute
@@ -138,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/event-days': {
+      id: '/event-days'
+      path: '/event-days'
+      fullPath: '/event-days'
+      preLoaderRoute: typeof EventDaysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calendar': {
       id: '/calendar'
       path: '/calendar'
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarRoute: CalendarRoute,
+  EventDaysRoute: EventDaysRoute,
   LoginRoute: LoginRoute,
   OperatingHoursRoute: OperatingHoursRoute,
   ReservationsRoute: ReservationsRoute,
