@@ -133,6 +133,23 @@ export const api = {
         method: "PUT",
         body: JSON.stringify({ pin }),
       }),
+
+    // Dias de Evento
+    listarEventDays: () => request<EventDay[]>("/admin/event-days"),
+
+    criarEventDay: (body: {
+      data: string;
+      nomeCliente: string;
+      telefone: string;
+      motivo?: string;
+    }) =>
+      request<EventDay>("/admin/event-days", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+
+    removerEventDay: (data: string) =>
+      request<void>(`/admin/event-days/${data}`, { method: "DELETE" }),
   },
 };
 
@@ -215,4 +232,18 @@ export interface Config {
   horarioAbertura: string;
   horarioFechamento: string;
   apiPin: string;
+}
+
+export interface EventDay {
+  id: number;
+  data: string;
+  dataFormatada: string;
+  dataExtenso: string;
+  diaSemana: number;
+  diaSemanaNome: string;
+  motivo: string | null;
+  nomeCliente: string;
+  telefone: string;
+  passado: boolean;
+  criadoEm: string;
 }
