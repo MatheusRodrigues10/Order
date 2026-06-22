@@ -1,10 +1,20 @@
 import type { Page } from "@playwright/test";
 
-export const BASE_URL = "http://localhost:5173";
-export const API_URL = "http://localhost:3001";
-export const EMAIL = "admin@restaurant.local";
-export const PASSWORD = "Admin@345336436";
-const API_PIN = "123456";
+export const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:5173";
+export const API_URL = process.env.E2E_API_URL ?? "http://localhost:3001";
+export const EMAIL = requireEnv("E2E_ADMIN_EMAIL");
+export const PASSWORD = requireEnv("E2E_ADMIN_PASSWORD");
+const API_PIN = requireEnv("E2E_API_PIN");
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `${name} não está definido. Configure as variáveis de ambiente E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD e E2E_API_PIN antes de rodar os testes (ex: em um .env.test ou nas secrets do CI).`
+    );
+  }
+  return value;
+}
 
 // Token é cacheado na sessão de testes para não exceder o rate limit (300/15min)
 let _cachedToken: string | null = null;

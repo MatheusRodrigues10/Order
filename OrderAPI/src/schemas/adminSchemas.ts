@@ -119,3 +119,18 @@ export const salvarHorarioFuncionamentoSchema = z.object({
     ativo: z.boolean().default(true)
   })
 });
+
+export const criarEventDaySchema = z.object({
+  body: z.object({
+    data: z.string().regex(dataRegex, "Formato YYYY-MM-DD"),
+    nomeCliente: z.string().min(1).max(120),
+    telefone: z.string().min(1).max(30),
+    motivo: z.string().min(1).max(200).optional()
+  })
+});
+
+export const eventDayParamSchema = z.object({
+  params: z.object({
+    data: z.string().regex(dataRegex, "Formato YYYY-MM-DD")
+  })
+});

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { AdminController } from "../controllers/adminController";
+import { EventDayController } from "../controllers/eventDayController";
 import { authJwtMiddleware } from "../middlewares/authJwtMiddleware";
 import { validateRequest } from "../middlewares/validateRequest";
 import {
@@ -14,12 +15,15 @@ import {
   mesaNumeroParamSchema,
   bloquearMesaSchema,
   horarioFuncionamentoDiaTurnoParamSchema,
-  salvarHorarioFuncionamentoSchema
+  salvarHorarioFuncionamentoSchema,
+  criarEventDaySchema,
+  eventDayParamSchema
 } from "../schemas/adminSchemas";
 import { asyncHandler } from "../utils/asyncHandler";
 
 const adminRoutes = Router();
 const ctrl = new AdminController();
+const eventDayCtrl = new EventDayController();
 
 adminRoutes.use(authJwtMiddleware);
 
@@ -40,6 +44,11 @@ adminRoutes.delete("/tables/:numero/block", validateRequest(mesaNumeroParamSchem
 adminRoutes.get("/operating-hours", asyncHandler(ctrl.listarHorarios.bind(ctrl)));
 adminRoutes.put("/operating-hours/:dia/:turno", validateRequest(salvarHorarioFuncionamentoSchema), asyncHandler(ctrl.salvarHorario.bind(ctrl)));
 adminRoutes.delete("/operating-hours/:dia/:turno", validateRequest(horarioFuncionamentoDiaTurnoParamSchema), asyncHandler(ctrl.removerHorario.bind(ctrl)));
+
+// ── Dias de Evento ─────────────────────────────────────────────────────────────
+adminRoutes.get("/event-days", asyncHandler(eventDayCtrl.listar.bind(eventDayCtrl)));
+adminRoutes.post("/event-days", validateRequest(criarEventDaySchema), asyncHandler(eventDayCtrl.criar.bind(eventDayCtrl)));
+adminRoutes.delete("/event-days/:data", validateRequest(eventDayParamSchema), asyncHandler(eventDayCtrl.remover.bind(eventDayCtrl)));
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 adminRoutes.get("/config", asyncHandler(ctrl.obterConfig.bind(ctrl)));

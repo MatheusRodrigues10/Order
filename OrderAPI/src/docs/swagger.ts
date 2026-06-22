@@ -144,6 +144,22 @@ const options: swaggerJsdoc.Options = {
         Disponibilidade: disponibilidadeSchema,
         Mesa: mesaSchema,
         HorarioFuncionamento: horarioFuncionamentoSchema,
+        EventDay: {
+          type: "object",
+          properties: {
+            id: { type: "integer" },
+            data: { type: "string", example: "2026-07-15" },
+            dataFormatada: { type: "string", example: "15/07/2026" },
+            dataExtenso: { type: "string", example: "Terça, 15 de julho de 2026" },
+            diaSemana: { type: "integer", example: 2, description: "0=Domingo ... 6=Sábado" },
+            diaSemanaNome: { type: "string", example: "Terça" },
+            motivo: { type: "string", nullable: true, example: "Confraternização empresa X" },
+            nomeCliente: { type: "string", example: "João Silva" },
+            telefone: { type: "string", example: "11999999999" },
+            passado: { type: "boolean", example: false, description: "true se o dia já passou" },
+            criadoEm: { type: "string", example: "20/06/2026 14:30:00" }
+          }
+        },
         Reserva: {
           type: "object",
           properties: {
@@ -346,6 +362,57 @@ const options: swaggerJsdoc.Options = {
           }
         }
       },
+      "/admin/event-days": {
+        get: {
+          tags: ["Admin"],
+          summary: "Listar dias reservados para evento",
+          description: "Retorna todos os dias bloqueados (futuros e histórico). O campo `passado` indica se o evento já ocorreu.",
+          security: [{ bearerAuth: [] }],
+          responses: {
+            "200": { description: "Lista de eventos", content: { "application/json": { schema: successWrapper({ type: "array", items: { $ref: "#/components/schemas/EventDay" } }) } } }
+          }
+        },
+        post: {
+          tags: ["Admin"],
+          summary: "Reservar um dia para evento",
+          description: "Bloqueia o dia inteiro — nenhuma reserva normal poderá ser feita nessa data pela IA ou pelo admin.",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["data", "nomeCliente", "telefone"],
+                  properties: {
+                    data: { type: "string", example: "2026-07-15", description: "Formato YYYY-MM-DD" },
+                    nomeCliente: { type: "string", example: "João Silva" },
+                    telefone: { type: "string", example: "11999999999" },
+                    motivo: { type: "string", example: "Confraternização empresa X", description: "Opcional" }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            "201": { description: "Evento criado", content: { "application/json": { schema: successWrapper({ $ref: "#/components/schemas/EventDay" }) } } },
+            "400": { description: "Data inválida" },
+            "409": { description: "Dia já reservado para evento" }
+          }
+        }
+      },
+      "/admin/event-days/{data}": {
+        delete: {
+          tags: ["Admin"],
+          summary: "Remover reserva de evento",
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: "data", in: "path", required: true, schema: { type: "string", example: "2026-07-15" }, description: "Formato YYYY-MM-DD" }],
+          responses: {
+            "200": { description: "Evento removido" },
+            "404": { description: "Nenhum evento encontrado para a data" }
+          }
+        }
+      },
       "/admin/config": {
         get: { tags: ["Config"], summary: "Obter configurações", security: [{ bearerAuth: [] }], responses: { "200": { description: "Settings" } } }
       },
@@ -429,7 +496,9 @@ const options: swaggerJsdoc.Options = {
                     quantidadePessoas: { type: "integer", minimum: 1, example: 3 },
                     data: { type: "string", example: "2026-06-20" },
                     hora: { type: "string", example: "19:00" },
-                    duracaoMinutos: { type: "integer", minimum: 30, example: 90, description: "Opcional. Se omitido, usa o padrão configurado." }
+                    duracaoMinutos: { type: "integer", minimum: 30, example: 90, description: "Opcional. Se omitido, usa o padrão configurado." },
+                    nomeCliente: { type: "string", example: "João Silva", description: "Obrigatório quando coletado pela IA — não omitir se o cliente informou o nome." },
+                    telefone: { type: "string", example: "11999999999", description: "Obrigatório quando coletado pela IA — não omitir se o cliente informou o telefone." }
                   }
                 }
               }

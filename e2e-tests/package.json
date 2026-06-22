@@ -1,0 +1,16 @@
+{
+  "name": "wa-restaurant-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Testes E2E (Playwright) para o painel WA Restaurant. Projeto separado do frontend — depende do backend (OrderAPI) e do frontend (wa-restaurant-main) já estarem rodando.",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^25.9.2",
+    "typescript": "^5.7.0"
+  }
+}

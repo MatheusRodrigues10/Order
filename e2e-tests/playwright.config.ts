@@ -1,15 +1,15 @@
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: "./tests",
   timeout: 40_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
   retries: 0,
-  reporter: [["list"], ["html", { open: "never", outputFolder: "e2e/reports" }]],
+  reporter: [["list"], ["html", { open: "never", outputFolder: "reports" }]],
 
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: process.env.E2E_BASE_URL ?? "http://localhost:5173",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "off",

@@ -19,7 +19,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const setToken = useAuthStore((s) => s.setToken);
 
-  const [email, setEmail] = useState("admin@restaurant.local");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -78,7 +78,7 @@ function LoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@restaurant.local"
+                placeholder="seu-email@exemplo.com"
                 disabled={loading}
                 className="bg-background"
               />

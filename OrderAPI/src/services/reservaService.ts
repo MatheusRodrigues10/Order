@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { AppError } from "../utils/AppError";
 import { ReservaRepository } from "../repositories/reservaRepository";
 import { MesaBloqueioRepository } from "../repositories/mesaBloqueioRepository";
+import { EventDayRepository } from "../repositories/eventDayRepository";
 import { SettingsService } from "./settingsService";
 import { HorarioFuncionamentoService, DIAS_SEMANA } from "./horarioFuncionamentoService";
 import { formatDateTimeBr } from "../utils/dateFormat";
@@ -11,7 +12,8 @@ export class ReservaService {
     private readonly reservaRepo = new ReservaRepository(),
     private readonly settingsService = new SettingsService(),
     private readonly mesaBloqueioRepo = new MesaBloqueioRepository(),
-    private readonly horarioFuncionamentoService = new HorarioFuncionamentoService()
+    private readonly horarioFuncionamentoService = new HorarioFuncionamentoService(),
+    private readonly eventDayRepo = new EventDayRepository()
   ) {}
 
   async cleanupExpired() {
@@ -240,6 +242,12 @@ export class ReservaService {
     for (let i = 0; i < totalDias; i++) {
       const diaAtual = this.addDias(inicio, i);
       const diaSemana = diaAtual.getDay();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const dataStr = `${diaAtual.getFullYear()}-${pad(diaAtual.getMonth() + 1)}-${pad(diaAtual.getDate())}`;
+
+      // Dia reservado para evento — pula sem oferecer horários
+      const isEvento = await this.eventDayRepo.isEventDay(dataStr);
+      if (isEvento) continue;
 
       let turnos = await this.horarioFuncionamentoService.getTurnosAtivosDoDia(diaSemana);
       if (turnos.length === 0) {
@@ -287,9 +295,8 @@ export class ReservaService {
       }
 
       if (horariosDoDia.length > 0) {
-        const pad = (n: number) => String(n).padStart(2, "0");
         dias.push({
-          data: `${diaAtual.getFullYear()}-${pad(diaAtual.getMonth() + 1)}-${pad(diaAtual.getDate())}`,
+          data: dataStr,
           diaSemanaNome: DIAS_SEMANA[diaSemana],
           horarios: horariosDoDia
         });
@@ -333,6 +340,11 @@ export class ReservaService {
 
     if (inicioReserva < new Date()) {
       throw new AppError("Não é possível reservar em horário que já passou", 400);
+    }
+
+    const isEvento = await this.eventDayRepo.isEventDay(data);
+    if (isEvento) {
+      throw new AppError("Restaurante fechado para evento neste dia", 409);
     }
 
     this.validarHorario(inicioReserva, fimLimpeza, settings.horarioAbertura, settings.horarioFechamento);
