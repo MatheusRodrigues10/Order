@@ -16,6 +16,7 @@ async function main() {
   }
 
   // ── Settings ────────────────────────────────────────────────────────────────
+  const apiPinHash = await bcrypt.hash(process.env.DEFAULT_API_PIN ?? "123456", 12);
   await prisma.settings.upsert({
     where: { id: 1 },
     update: {},
@@ -27,7 +28,7 @@ async function main() {
       tempoLimpezaMinutos: 30,
       horarioAbertura: "11:00",
       horarioFechamento: "23:00",
-      apiPin: "123456"
+      apiPin: apiPinHash
     }
   });
   console.log("Settings: 70 mesas, 4 lugares/mesa, 120min reserva, 30min limpeza, 11:00-23:00");
@@ -52,9 +53,9 @@ async function main() {
   const at   = (h: number, m: number) => new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), h, m, 0, 0);
 
   const reservas = [
-    { numeroMesa: 1,  quantidadePessoas: 2, inicioReserva: add(now, -30),   fimReserva: add(now, 90),   fimLimpeza: add(now, 120)  },
-    { numeroMesa: 2,  quantidadePessoas: 4, inicioReserva: at(19, 0),       fimReserva: at(21, 0),      fimLimpeza: at(21, 30)     },
-    { numeroMesa: 3,  quantidadePessoas: 3, inicioReserva: at(20, 30),      fimReserva: at(22, 30),     fimLimpeza: at(23, 0)      },
+    { numeroMesa: 1, quantidadePessoas: 2, nomeCliente: "Cliente Teste 1", telefone: "11999990001", inicioReserva: add(now, -30), fimReserva: add(now, 90), fimLimpeza: add(now, 120) },
+    { numeroMesa: 2, quantidadePessoas: 4, nomeCliente: "Cliente Teste 2", telefone: "11999990002", inicioReserva: at(19, 0), fimReserva: at(21, 0), fimLimpeza: at(21, 30) },
+    { numeroMesa: 3, quantidadePessoas: 3, nomeCliente: "Cliente Teste 3", telefone: "11999990003", inicioReserva: at(20, 30), fimReserva: at(22, 30), fimLimpeza: at(23, 0) },
   ];
 
   let criadas = 0;

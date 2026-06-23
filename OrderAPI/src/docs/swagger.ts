@@ -19,7 +19,8 @@ const errorSchema = {
 const reservaResultSchema = {
   type: "object",
   properties: {
-    mesa: { type: "integer", example: 5 },
+    ids: { type: "array", items: { type: "integer" }, example: [1] },
+    mesas: { type: "array", items: { type: "integer" }, example: [5] },
     inicio: { type: "string", format: "date-time" },
     fim: { type: "string", format: "date-time" },
     fimLimpeza: { type: "string", format: "date-time" }
@@ -90,8 +91,8 @@ const mesaSchema = {
         grupoReservaId: { type: "string", nullable: true },
         mesasJuntadas: { type: "array", items: { type: "integer" } },
         quantidadePessoas: { type: "integer" },
-        nomeCliente: { type: "string", nullable: true },
-        telefone: { type: "string", nullable: true },
+        nomeCliente: { type: "string" },
+        telefone: { type: "string" },
         inicioReserva: { type: "string", format: "date-time" },
         fimReserva: { type: "string", format: "date-time" },
         fimLimpeza: { type: "string", format: "date-time" }
@@ -165,7 +166,10 @@ const options: swaggerJsdoc.Options = {
           properties: {
             id: { type: "integer" },
             numeroMesa: { type: "integer" },
+            grupoReservaId: { type: "string", nullable: true },
             quantidadePessoas: { type: "integer" },
+            nomeCliente: { type: "string" },
+            telefone: { type: "string" },
             inicioReserva: { type: "string", format: "date-time" },
             fimReserva: { type: "string", format: "date-time" },
             fimLimpeza: { type: "string", format: "date-time" },
@@ -211,7 +215,7 @@ const options: swaggerJsdoc.Options = {
           responses: {
             "200": {
               description: "Contagem de mesas",
-              content: { "application/json": { schema: successWrapper({ type: "object", properties: { totalMesas: { type: "integer", example: 70 }, mesasLivres: { type: "integer", example: 52 }, mesasReservadas: { type: "integer", example: 18 } } }) } }
+              content: { "application/json": { schema: successWrapper({ type: "object", properties: { totalMesas: { type: "integer", example: 70 }, mesasLivres: { type: "integer", example: 50 }, mesasReservadas: { type: "integer", example: 18 }, mesasBloqueadas: { type: "integer", example: 2 } } }) } }
             }
           }
         }
@@ -233,12 +237,15 @@ const options: swaggerJsdoc.Options = {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["mesa", "quantidadePessoas", "data", "hora"],
+                  required: ["mesa", "quantidadePessoas", "data", "hora", "nomeCliente", "telefone"],
                   properties: {
                     mesa: { type: "integer", example: 10 },
                     quantidadePessoas: { type: "integer", minimum: 1, example: 3 },
                     data: { type: "string", example: "2026-06-20" },
-                    hora: { type: "string", example: "19:00" }
+                    hora: { type: "string", example: "19:00" },
+                    duracaoMinutos: { type: "integer", minimum: 30, example: 90, description: "Opcional. Se omitido, usa o padrão configurado." },
+                    nomeCliente: { type: "string", example: "João Silva", description: "Nome do cliente." },
+                    telefone: { type: "string", example: "11999999999", description: "Telefone do cliente com DDD." }
                   }
                 }
               }
@@ -491,14 +498,14 @@ const options: swaggerJsdoc.Options = {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["quantidadePessoas", "data", "hora"],
+                  required: ["quantidadePessoas", "data", "hora", "nomeCliente", "telefone"],
                   properties: {
                     quantidadePessoas: { type: "integer", minimum: 1, example: 3 },
                     data: { type: "string", example: "2026-06-20" },
                     hora: { type: "string", example: "19:00" },
                     duracaoMinutos: { type: "integer", minimum: 30, example: 90, description: "Opcional. Se omitido, usa o padrão configurado." },
-                    nomeCliente: { type: "string", example: "João Silva", description: "Obrigatório quando coletado pela IA — não omitir se o cliente informou o nome." },
-                    telefone: { type: "string", example: "11999999999", description: "Obrigatório quando coletado pela IA — não omitir se o cliente informou o telefone." }
+                    nomeCliente: { type: "string", example: "João Silva", description: "Nome do cliente." },
+                    telefone: { type: "string", example: "11999999999", description: "Telefone do cliente com DDD." }
                   }
                 }
               }

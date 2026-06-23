@@ -16,7 +16,8 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({
       success: false,
-      message: error.message
+      message: error.message,
+      ...(error.details ? { details: error.details } : {})
     });
   }
 

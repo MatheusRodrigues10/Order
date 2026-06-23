@@ -3,15 +3,37 @@ import { z } from "zod";
 const horaRegex = /^\d{2}:\d{2}$/;
 const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
 
+const nomeClienteObrigatorio = z.string()
+  .trim()
+  .min(1, "Nome do cliente é obrigatório")
+  .max(120, "Nome do cliente deve ter no máximo 120 caracteres");
+
+const telefoneObrigatorio = z.string()
+  .trim()
+  .min(1, "Telefone é obrigatório")
+  .max(30, "Telefone deve ter no máximo 30 caracteres")
+  .refine((val) => {
+    const digits = val.replace(/\D/g, "");
+    return digits.length >= 10 && digits.length <= 11;
+  }, "Telefone incompleto. Informe o DDD e o número completo.");
+
+const horaString = z.string().regex(horaRegex, "Formato HH:MM").refine(
+  (val: string) => {
+    const [h, m] = val.split(":").map(Number);
+    return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+  },
+  { message: "Hora inválida (HH: 00-23, MM: 00-59)" }
+);
+
 export const criarReservaAdminSchema = z.object({
   body: z.object({
     mesa: z.coerce.number().int().positive(),
     quantidadePessoas: z.coerce.number().int().min(1),
     data: z.string().regex(dataRegex, "Formato YYYY-MM-DD"),
-    hora: z.string().regex(horaRegex, "Formato HH:MM"),
+    hora: horaString,
     duracaoMinutos: z.coerce.number().int().min(30).optional(),
-    nomeCliente: z.string().min(1).max(120).optional(),
-    telefone: z.string().min(1).max(30).optional()
+    nomeCliente: nomeClienteObrigatorio,
+    telefone: telefoneObrigatorio
   })
 });
 
@@ -19,10 +41,10 @@ export const reservarExternalSchema = z.object({
   body: z.object({
     quantidadePessoas: z.coerce.number().int().min(1),
     data: z.string().regex(dataRegex, "Formato YYYY-MM-DD"),
-    hora: z.string().regex(horaRegex, "Formato HH:MM"),
+    hora: horaString,
     duracaoMinutos: z.coerce.number().int().min(30).optional(),
-    nomeCliente: z.string().min(1).max(120).optional(),
-    telefone: z.string().min(1).max(30).optional()
+    nomeCliente: nomeClienteObrigatorio,
+    telefone: telefoneObrigatorio
   })
 });
 
@@ -67,8 +89,8 @@ export const limpezaSchema = z.object({
 
 export const horarioSchema = z.object({
   body: z.object({
-    abertura: z.string().regex(horaRegex, "Formato HH:MM"),
-    fechamento: z.string().regex(horaRegex, "Formato HH:MM")
+    abertura: horaString,
+    fechamento: horaString
   })
 });
 
@@ -81,7 +103,7 @@ export const pinSchema = z.object({
 export const statusQuerySchema = z.object({
   query: z.object({
     data: z.string().regex(dataRegex, "Formato YYYY-MM-DD"),
-    hora: z.string().regex(horaRegex, "Formato HH:MM")
+    hora: horaString
   })
 });
 
@@ -114,8 +136,8 @@ export const salvarHorarioFuncionamentoSchema = z.object({
     turno: z.coerce.number().int().min(1).max(2)
   }),
   body: z.object({
-    horaAbertura: z.string().regex(horaRegex, "Formato HH:MM"),
-    horaFechamento: z.string().regex(horaRegex, "Formato HH:MM"),
+    horaAbertura: horaString,
+    horaFechamento: horaString,
     ativo: z.boolean().default(true)
   })
 });

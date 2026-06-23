@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 import { ReservaService } from "../services/reservaService";
 import { ok } from "../utils/apiResponse";
-import { AppError } from "../utils/AppError";
 
 const reservaService = new ReservaService();
 
@@ -12,11 +11,9 @@ export class ExternalApiController {
   }
 
   async status(req: Request, res: Response) {
-    const { data, hora } = req.query;
-    if (!data || !hora) {
-      throw new AppError("Parâmetros 'data' e 'hora' são obrigatórios", 400);
-    }
-    const result = await reservaService.getStatusApi(String(data), String(hora));
+    const data = req.query["data"] as string;
+    const hora = req.query["hora"] as string;
+    const result = await reservaService.getStatusApi(data, hora);
     return ok(res, result);
   }
 

@@ -4,17 +4,10 @@ export class MesaBloqueadaError extends AppError {
   constructor(numeroMesa: number, bloqueadaPor?: string, motivo?: string) {
     super(
       `Mesa ${numeroMesa} está bloqueada${bloqueadaPor ? ` por ${bloqueadaPor}` : ""}`,
-      423,
+      409,
       { numeroMesa, bloqueadaPor, motivo }
     );
     this.name = "MesaBloqueadaError";
-  }
-}
-
-export class MesaJaReservadaError extends AppError {
-  constructor(numeroMesa: number) {
-    super(`Mesa ${numeroMesa} já está reservada para o período selecionado`, 409, { numeroMesa });
-    this.name = "MesaJaReservadaError";
   }
 }
 

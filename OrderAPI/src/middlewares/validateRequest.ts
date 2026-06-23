@@ -16,6 +16,7 @@ export function validateRequest(schema: ZodSchema) {
     const data = parsed.data as {
       body?: unknown;
       params?: Record<string, unknown>;
+      query?: Record<string, unknown>;
     };
 
     if ("body" in data) {
@@ -24,6 +25,10 @@ export function validateRequest(schema: ZodSchema) {
 
     if (data.params) {
       Object.assign(request.params, data.params);
+    }
+
+    if (data.query) {
+      Object.assign(request.query, data.query);
     }
 
     return next();

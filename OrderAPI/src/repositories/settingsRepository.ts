@@ -1,4 +1,7 @@
+import bcrypt from "bcryptjs";
 import { prisma } from "../config/prisma";
+
+const DEFAULT_PIN_HASH = bcrypt.hashSync(process.env.DEFAULT_API_PIN ?? "123456", 12);
 
 export class SettingsRepository {
   find() {
@@ -13,7 +16,7 @@ export class SettingsRepository {
         tempoLimpezaMinutos: 30,
         horarioAbertura: "11:00",
         horarioFechamento: "23:00",
-        apiPin: "123456"
+        apiPin: DEFAULT_PIN_HASH
       }
     });
   }

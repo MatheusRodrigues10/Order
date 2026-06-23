@@ -34,8 +34,8 @@ model Reserva {
   numeroMesa        Int
   grupoReservaId    String?
   quantidadePessoas Int
-  nomeCliente       String?
-  telefone          String?
+  nomeCliente       String
+  telefone          String
   inicioReserva     DateTime
   fimReserva        DateTime
   fimLimpeza        DateTime

@@ -77,7 +77,7 @@ export class AdminController {
 
   // ── Config ────────────────────────────────────────────────────────────────────
   async obterConfig(_req: Request, res: Response) {
-    const settings = await settingsService.getSettings();
+    const { apiPin: _, ...settings } = await settingsService.getSettings();
     return ok(res, settings);
   }
 
