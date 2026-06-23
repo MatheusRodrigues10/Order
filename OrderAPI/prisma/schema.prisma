@@ -34,8 +34,8 @@ model Reserva {
   numeroMesa        Int
   grupoReservaId    String?
   quantidadePessoas Int
-  nomeCliente       String?
-  telefone          String?
+  nomeCliente       String
+  telefone          String
   inicioReserva     DateTime
   fimReserva        DateTime
   fimLimpeza        DateTime
@@ -68,4 +68,16 @@ model MesaBloqueada {
   bloqueadaEm  DateTime @default(now())
 
   @@map("mesas_bloqueadas")
+}
+
+model EventDay {
+  id           Int      @id @default(autoincrement())
+  data         String   // YYYY-MM-DD
+  motivo       String?
+  nomeCliente  String
+  telefone     String
+  createdAt    DateTime @default(now())
+
+  @@unique([data])
+  @@map("event_days")
 }

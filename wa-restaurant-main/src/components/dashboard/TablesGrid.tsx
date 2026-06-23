@@ -9,7 +9,7 @@ export function TablesGrid() {
   const queryClient = useQueryClient();
 
   const { data: mesas = [], isLoading } = useQuery<MesaInfo[]>({
-    queryKey: ["mesas"],
+    queryKey: ["tables"],
     queryFn: api.admin.listarMesas,
     refetchInterval: 30_000,
   });
@@ -69,9 +69,9 @@ export function TablesGrid() {
         open={!!selected}
         onClose={() => setSelected(null)}
         onAction={() => {
-          queryClient.invalidateQueries({ queryKey: ["mesas"] });
+          queryClient.invalidateQueries({ queryKey: ["tables"] });
           queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-          queryClient.invalidateQueries({ queryKey: ["reservas"] });
+          queryClient.invalidateQueries({ queryKey: ["reservations"] });
           setSelected(null);
         }}
       />

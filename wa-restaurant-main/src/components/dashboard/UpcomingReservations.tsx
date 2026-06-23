@@ -18,7 +18,7 @@ export function UpcomingReservations() {
     isLoading,
     refetch,
   } = useQuery<Reserva[]>({
-    queryKey: ["reservas"],
+    queryKey: ["reservations"],
     queryFn: api.admin.listarReservas,
     refetchInterval: 30_000,
   });

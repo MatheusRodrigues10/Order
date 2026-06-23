@@ -43,6 +43,11 @@ export class MesaBloqueioService {
   }
 
   async desbloquear(numeroMesa: number) {
+    const settings = await this.settingsService.getSettings();
+    if (numeroMesa < 1 || numeroMesa > settings.totalMesas) {
+      throw new MesaNaoEncontradaError(numeroMesa);
+    }
+
     const existing = await this.repo.findByNumero(numeroMesa);
     if (!existing) {
       throw new DesbloqueioInvalidoError(`Mesa ${numeroMesa} não está bloqueada`, { numeroMesa });

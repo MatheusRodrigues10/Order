@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { AdminController } from "../controllers/adminController";
+import { EventDayController } from "../controllers/eventDayController";
 import { authJwtMiddleware } from "../middlewares/authJwtMiddleware";
 import { validateRequest } from "../middlewares/validateRequest";
 import {
@@ -14,12 +15,15 @@ import {
   mesaNumeroParamSchema,
   bloquearMesaSchema,
   horarioFuncionamentoDiaTurnoParamSchema,
-  salvarHorarioFuncionamentoSchema
+  salvarHorarioFuncionamentoSchema,
+  criarEventDaySchema,
+  eventDayParamSchema
 } from "../schemas/adminSchemas";
 import { asyncHandler } from "../utils/asyncHandler";
 
 const adminRoutes = Router();
 const ctrl = new AdminController();
+const eventDayCtrl = new EventDayController();
 
 adminRoutes.use(authJwtMiddleware);
 
@@ -27,27 +31,32 @@ adminRoutes.use(authJwtMiddleware);
 adminRoutes.get("/dashboard", asyncHandler(ctrl.dashboard.bind(ctrl)));
 
 // ── Reservas ───────────────────────────────────────────────────────────────────
-adminRoutes.get("/reservas", asyncHandler(ctrl.listarReservas.bind(ctrl)));
-adminRoutes.post("/reservas", validateRequest(criarReservaAdminSchema), asyncHandler(ctrl.criarReserva.bind(ctrl)));
-adminRoutes.delete("/reservas/:id", validateRequest(reservaParamSchema), asyncHandler(ctrl.cancelarReserva.bind(ctrl)));
+adminRoutes.get("/reservations", asyncHandler(ctrl.listarReservas.bind(ctrl)));
+adminRoutes.post("/reservations", validateRequest(criarReservaAdminSchema), asyncHandler(ctrl.criarReserva.bind(ctrl)));
+adminRoutes.delete("/reservations/:id", validateRequest(reservaParamSchema), asyncHandler(ctrl.cancelarReserva.bind(ctrl)));
 
 // ── Mesas ──────────────────────────────────────────────────────────────────────
-adminRoutes.get("/mesas", asyncHandler(ctrl.listarMesas.bind(ctrl)));
-adminRoutes.post("/mesas/:numero/bloquear", validateRequest(bloquearMesaSchema), asyncHandler(ctrl.bloquearMesa.bind(ctrl)));
-adminRoutes.delete("/mesas/:numero/bloquear", validateRequest(mesaNumeroParamSchema), asyncHandler(ctrl.desbloquearMesa.bind(ctrl)));
+adminRoutes.get("/tables", asyncHandler(ctrl.listarMesas.bind(ctrl)));
+adminRoutes.post("/tables/:numero/block", validateRequest(bloquearMesaSchema), asyncHandler(ctrl.bloquearMesa.bind(ctrl)));
+adminRoutes.delete("/tables/:numero/block", validateRequest(mesaNumeroParamSchema), asyncHandler(ctrl.desbloquearMesa.bind(ctrl)));
 
 // ── Horários de Funcionamento ──────────────────────────────────────────────────
-adminRoutes.get("/horarios-funcionamento", asyncHandler(ctrl.listarHorarios.bind(ctrl)));
-adminRoutes.put("/horarios-funcionamento/:dia/:turno", validateRequest(salvarHorarioFuncionamentoSchema), asyncHandler(ctrl.salvarHorario.bind(ctrl)));
-adminRoutes.delete("/horarios-funcionamento/:dia/:turno", validateRequest(horarioFuncionamentoDiaTurnoParamSchema), asyncHandler(ctrl.removerHorario.bind(ctrl)));
+adminRoutes.get("/operating-hours", asyncHandler(ctrl.listarHorarios.bind(ctrl)));
+adminRoutes.put("/operating-hours/:dia/:turno", validateRequest(salvarHorarioFuncionamentoSchema), asyncHandler(ctrl.salvarHorario.bind(ctrl)));
+adminRoutes.delete("/operating-hours/:dia/:turno", validateRequest(horarioFuncionamentoDiaTurnoParamSchema), asyncHandler(ctrl.removerHorario.bind(ctrl)));
+
+// ── Dias de Evento ─────────────────────────────────────────────────────────────
+adminRoutes.get("/event-days", asyncHandler(eventDayCtrl.listar.bind(eventDayCtrl)));
+adminRoutes.post("/event-days", validateRequest(criarEventDaySchema), asyncHandler(eventDayCtrl.criar.bind(eventDayCtrl)));
+adminRoutes.delete("/event-days/:data", validateRequest(eventDayParamSchema), asyncHandler(eventDayCtrl.remover.bind(eventDayCtrl)));
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 adminRoutes.get("/config", asyncHandler(ctrl.obterConfig.bind(ctrl)));
-adminRoutes.put("/config/mesas", validateRequest(totalMesasSchema), asyncHandler(ctrl.alterarTotalMesas.bind(ctrl)));
-adminRoutes.put("/config/capacidade", validateRequest(capacidadeSchema), asyncHandler(ctrl.alterarCapacidade.bind(ctrl)));
-adminRoutes.put("/config/expiracao", validateRequest(expiracaoSchema), asyncHandler(ctrl.alterarExpiracao.bind(ctrl)));
-adminRoutes.put("/config/limpeza", validateRequest(limpezaSchema), asyncHandler(ctrl.alterarLimpeza.bind(ctrl)));
-adminRoutes.put("/config/horario", validateRequest(horarioSchema), asyncHandler(ctrl.alterarHorario.bind(ctrl)));
+adminRoutes.put("/config/tables", validateRequest(totalMesasSchema), asyncHandler(ctrl.alterarTotalMesas.bind(ctrl)));
+adminRoutes.put("/config/capacity", validateRequest(capacidadeSchema), asyncHandler(ctrl.alterarCapacidade.bind(ctrl)));
+adminRoutes.put("/config/duration", validateRequest(expiracaoSchema), asyncHandler(ctrl.alterarExpiracao.bind(ctrl)));
+adminRoutes.put("/config/cleanup", validateRequest(limpezaSchema), asyncHandler(ctrl.alterarLimpeza.bind(ctrl)));
+adminRoutes.put("/config/hours", validateRequest(horarioSchema), asyncHandler(ctrl.alterarHorario.bind(ctrl)));
 adminRoutes.put("/config/pin", validateRequest(pinSchema), asyncHandler(ctrl.alterarPin.bind(ctrl)));
 
 export { adminRoutes };

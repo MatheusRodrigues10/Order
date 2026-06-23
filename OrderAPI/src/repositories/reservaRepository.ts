@@ -4,8 +4,8 @@ type ReservaData = {
   numeroMesa: number;
   grupoReservaId?: string;
   quantidadePessoas: number;
-  nomeCliente?: string;
-  telefone?: string;
+  nomeCliente: string;
+  telefone: string;
   inicioReserva: Date;
   fimReserva: Date;
   fimLimpeza: Date;
@@ -77,10 +77,18 @@ export class ReservaRepository {
   }
 
   async createIfFree(data: ReservaData) {
-    const conflicts = await this.findMesaConflicts(data.numeroMesa, data.inicioReserva, data.fimLimpeza);
-    if (conflicts.length > 0) return null;
     try {
-      return await this.create(data);
+      return await prisma.$transaction(async (tx) => {
+        const conflicts = await tx.reserva.findMany({
+          where: {
+            numeroMesa: data.numeroMesa,
+            inicioReserva: { lt: data.fimLimpeza },
+            fimLimpeza: { gt: data.inicioReserva }
+          }
+        });
+        if (conflicts.length > 0) return null;
+        return await tx.reserva.create({ data });
+      }, { isolationLevel: "Serializable" });
     } catch {
       return null;
     }

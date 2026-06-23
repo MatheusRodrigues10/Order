@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -14,13 +14,25 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}${path}`, { ...init, headers });
-  const json = await res.json();
 
-  if (!res.ok) {
-    throw new ApiError(json?.message ?? "Erro desconhecido", res.status);
+  if (res.status === 401 && path !== "/admin/login") {
+    localStorage.removeItem("wa_token");
+    window.location.href = "/login";
+    throw new ApiError("Sessão expirada", 401);
   }
 
-  return (json as { success: boolean; data: T }).data ?? json;
+  let json: Record<string, unknown>;
+  try {
+    json = await res.json();
+  } catch {
+    throw new ApiError("Resposta inválida do servidor", res.status);
+  }
+
+  if (!res.ok) {
+    throw new ApiError((json?.message as string) ?? "Erro desconhecido", res.status);
+  }
+
+  return (json as { success: boolean; data: T }).data ?? (json as T);
 }
 
 export class ApiError extends Error {
@@ -47,7 +59,7 @@ export const api = {
     dashboard: () => request<DashboardData>("/admin/dashboard"),
 
     // Reservas
-    listarReservas: () => request<Reserva[]>("/admin/reservas"),
+    listarReservas: () => request<Reserva[]>("/admin/reservations"),
 
     criarReserva: (body: {
       mesa: number;
@@ -55,30 +67,30 @@ export const api = {
       data: string;
       hora: string;
       duracaoMinutos?: number;
-      nomeCliente?: string;
-      telefone?: string;
+      nomeCliente: string;
+      telefone: string;
     }) =>
-      request<ReservaResult>("/admin/reservas", {
+      request<ReservaResult>("/admin/reservations", {
         method: "POST",
         body: JSON.stringify(body),
       }),
 
-    cancelarReserva: (id: number) => request<void>(`/admin/reservas/${id}`, { method: "DELETE" }),
+    cancelarReserva: (id: number) => request<void>(`/admin/reservations/${id}`, { method: "DELETE" }),
 
     // Mesas
-    listarMesas: () => request<MesaInfo[]>("/admin/mesas"),
+    listarMesas: () => request<MesaInfo[]>("/admin/tables"),
 
     bloquearMesa: (numero: number, bloqueadaPor: string, motivo?: string) =>
-      request<MesaBloqueio>(`/admin/mesas/${numero}/bloquear`, {
+      request<MesaBloqueio>(`/admin/tables/${numero}/block`, {
         method: "POST",
         body: JSON.stringify({ bloqueadaPor, motivo }),
       }),
 
     desbloquearMesa: (numero: number) =>
-      request<void>(`/admin/mesas/${numero}/bloquear`, { method: "DELETE" }),
+      request<void>(`/admin/tables/${numero}/block`, { method: "DELETE" }),
 
     // Horários de Funcionamento
-    listarHorarios: () => request<HorarioFuncionamento[]>("/admin/horarios-funcionamento"),
+    listarHorarios: () => request<HorarioFuncionamento[]>("/admin/operating-hours"),
 
     salvarHorario: (
       dia: number,
@@ -87,43 +99,43 @@ export const api = {
       horaFechamento: string,
       ativo = true,
     ) =>
-      request<HorarioFuncionamento>(`/admin/horarios-funcionamento/${dia}/${turno}`, {
+      request<HorarioFuncionamento>(`/admin/operating-hours/${dia}/${turno}`, {
         method: "PUT",
         body: JSON.stringify({ horaAbertura, horaFechamento, ativo }),
       }),
 
     removerHorario: (dia: number, turno: number) =>
-      request<void>(`/admin/horarios-funcionamento/${dia}/${turno}`, { method: "DELETE" }),
+      request<void>(`/admin/operating-hours/${dia}/${turno}`, { method: "DELETE" }),
 
     // Config
     getConfig: () => request<Config>("/admin/config"),
 
     updateMesas: (totalMesas: number) =>
-      request<{ totalMesas: number }>("/admin/config/mesas", {
+      request<{ totalMesas: number }>("/admin/config/tables", {
         method: "PUT",
         body: JSON.stringify({ totalMesas }),
       }),
 
     updateCapacidade: (lugaresPorMesa: number) =>
-      request<{ lugaresPorMesa: number }>("/admin/config/capacidade", {
+      request<{ lugaresPorMesa: number }>("/admin/config/capacity", {
         method: "PUT",
         body: JSON.stringify({ lugaresPorMesa }),
       }),
 
     updateExpiracao: (duracaoReservaMinutos: number) =>
-      request<{ duracaoReservaMinutos: number }>("/admin/config/expiracao", {
+      request<{ duracaoReservaMinutos: number }>("/admin/config/duration", {
         method: "PUT",
         body: JSON.stringify({ duracaoReservaMinutos }),
       }),
 
     updateLimpeza: (tempoLimpezaMinutos: number) =>
-      request<{ tempoLimpezaMinutos: number }>("/admin/config/limpeza", {
+      request<{ tempoLimpezaMinutos: number }>("/admin/config/cleanup", {
         method: "PUT",
         body: JSON.stringify({ tempoLimpezaMinutos }),
       }),
 
     updateHorario: (abertura: string, fechamento: string) =>
-      request<{ horarioAbertura: string; horarioFechamento: string }>("/admin/config/horario", {
+      request<{ horarioAbertura: string; horarioFechamento: string }>("/admin/config/hours", {
         method: "PUT",
         body: JSON.stringify({ abertura, fechamento }),
       }),
@@ -133,6 +145,23 @@ export const api = {
         method: "PUT",
         body: JSON.stringify({ pin }),
       }),
+
+    // Dias de Evento
+    listarEventDays: () => request<EventDay[]>("/admin/event-days"),
+
+    criarEventDay: (body: {
+      data: string;
+      nomeCliente: string;
+      telefone: string;
+      motivo?: string;
+    }) =>
+      request<EventDay>("/admin/event-days", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+
+    removerEventDay: (data: string) =>
+      request<void>(`/admin/event-days/${data}`, { method: "DELETE" }),
   },
 };
 
@@ -149,8 +178,8 @@ export interface Reserva {
   id: number;
   numeroMesa: number;
   quantidadePessoas: number;
-  nomeCliente: string | null;
-  telefone: string | null;
+  nomeCliente: string;
+  telefone: string;
   inicioReserva: string;
   fimReserva: string;
   fimLimpeza: string;
@@ -175,8 +204,8 @@ export interface MesaInfo {
     grupoReservaId?: string | null;
     mesasJuntadas?: number[];
     quantidadePessoas: number;
-    nomeCliente?: string | null;
-    telefone?: string | null;
+    nomeCliente: string;
+    telefone: string;
     inicioReserva: string;
     fimReserva: string;
     fimLimpeza: string;
@@ -214,5 +243,18 @@ export interface Config {
   tempoLimpezaMinutos: number;
   horarioAbertura: string;
   horarioFechamento: string;
-  apiPin: string;
+}
+
+export interface EventDay {
+  id: number;
+  data: string;
+  dataFormatada: string;
+  dataExtenso: string;
+  diaSemana: number;
+  diaSemanaNome: string;
+  motivo: string | null;
+  nomeCliente: string;
+  telefone: string;
+  passado: boolean;
+  criadoEm: string;
 }

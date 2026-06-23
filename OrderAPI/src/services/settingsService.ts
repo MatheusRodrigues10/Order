@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { AppError } from "../utils/AppError";
 import { ReservaRepository } from "../repositories/reservaRepository";
 import { SettingsRepository } from "../repositories/settingsRepository";
@@ -41,7 +42,8 @@ export class SettingsService {
     return this.repo.updateHorario(abertura, fechamento);
   }
 
-  updatePin(pin: string) {
-    return this.repo.updatePin(pin);
+  async updatePin(pin: string) {
+    const hash = await bcrypt.hash(pin, 12);
+    return this.repo.updatePin(hash);
   }
 }

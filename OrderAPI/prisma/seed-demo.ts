@@ -8,6 +8,7 @@
  * Comando: npm run seed:demo
  */
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 
@@ -65,6 +66,7 @@ async function main() {
   // ── 1. Settings ─────────────────────────────────────────────────────────────
   console.log("─── 1. Settings ────────────────────────────────────────────");
 
+  const apiPinHash = await bcrypt.hash(process.env.DEFAULT_API_PIN ?? "123456", 12);
   await prisma.settings.upsert({
     where:  { id: 1 },
     update: {
@@ -83,7 +85,7 @@ async function main() {
       tempoLimpezaMinutos:    30,
       horarioAbertura:    "11:00",
       horarioFechamento:  "23:00",
-      apiPin:          "123456",
+      apiPin:          apiPinHash,
     },
   });
 
