@@ -49,7 +49,7 @@ function DashboardPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" title="Data para nova reserva">
                 {format(selectedDate, "dd MMM", { locale: ptBR })}
                 <ChevronDown className="h-4 w-4" />
               </Button>

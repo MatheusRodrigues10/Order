@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -14,13 +14,25 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}${path}`, { ...init, headers });
-  const json = await res.json();
 
-  if (!res.ok) {
-    throw new ApiError(json?.message ?? "Erro desconhecido", res.status);
+  if (res.status === 401 && path !== "/admin/login") {
+    localStorage.removeItem("wa_token");
+    window.location.href = "/login";
+    throw new ApiError("Sessão expirada", 401);
   }
 
-  return (json as { success: boolean; data: T }).data ?? json;
+  let json: Record<string, unknown>;
+  try {
+    json = await res.json();
+  } catch {
+    throw new ApiError("Resposta inválida do servidor", res.status);
+  }
+
+  if (!res.ok) {
+    throw new ApiError((json?.message as string) ?? "Erro desconhecido", res.status);
+  }
+
+  return (json as { success: boolean; data: T }).data ?? (json as T);
 }
 
 export class ApiError extends Error {
@@ -55,8 +67,8 @@ export const api = {
       data: string;
       hora: string;
       duracaoMinutos?: number;
-      nomeCliente?: string;
-      telefone?: string;
+      nomeCliente: string;
+      telefone: string;
     }) =>
       request<ReservaResult>("/admin/reservations", {
         method: "POST",
@@ -166,8 +178,8 @@ export interface Reserva {
   id: number;
   numeroMesa: number;
   quantidadePessoas: number;
-  nomeCliente: string | null;
-  telefone: string | null;
+  nomeCliente: string;
+  telefone: string;
   inicioReserva: string;
   fimReserva: string;
   fimLimpeza: string;
@@ -192,8 +204,8 @@ export interface MesaInfo {
     grupoReservaId?: string | null;
     mesasJuntadas?: number[];
     quantidadePessoas: number;
-    nomeCliente?: string | null;
-    telefone?: string | null;
+    nomeCliente: string;
+    telefone: string;
     inicioReserva: string;
     fimReserva: string;
     fimLimpeza: string;
@@ -231,7 +243,6 @@ export interface Config {
   tempoLimpezaMinutos: number;
   horarioAbertura: string;
   horarioFechamento: string;
-  apiPin: string;
 }
 
 export interface EventDay {

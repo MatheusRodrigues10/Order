@@ -212,6 +212,7 @@ test("7 · Telefone incompleto bloqueia o submit", async ({ page }) => {
   await page.locator('[role="option"]').first().waitFor({ state: "visible" });
   await page.locator('[role="option"]').first().click();
 
+  await dialog.locator('input[type="text"]').fill("Cliente E2E Telefone");
   await dialog.locator('input[type="tel"]').fill("11999");
 
   await dialog.locator('button:has-text("Confirmar reserva")').click();
@@ -279,6 +280,7 @@ test("9 · Cancelar reserva via página de reservas", async ({ page }) => {
     data: tomorrow(),
     hora: "19:00",
     nomeCliente: "E2E Cancelar",
+    telefone: "11987654321",
   });
   expect(createRes.status).toBe(201);
   const { data: reservaData } = (await createRes.json()) as {

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, type Reserva, ApiError } from "@/lib/api";
+import { api, type Reserva, type HorarioFuncionamento, ApiError } from "@/lib/api";
 import { toast } from "sonner";
 import { Clock, Users, Trash2, RefreshCw } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -32,6 +32,14 @@ function formatHora(iso: string) {
   }
 }
 
+function todayStr() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function CalendarPage() {
   const queryClient = useQueryClient();
   const {
@@ -44,18 +52,45 @@ function CalendarPage() {
     refetchInterval: 30_000,
   });
 
+  const { data: horarios = [] } = useQuery<HorarioFuncionamento[]>({
+    queryKey: ["operating-hours"],
+    queryFn: api.admin.listarHorarios,
+    staleTime: 60_000,
+  });
+
   const [idToDelete, setIdToDelete] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const hoje = todayStr();
+
   const sorted = useMemo(
-    () => [...reservas].sort((a, b) => a.inicioReserva.localeCompare(b.inicioReserva)),
-    [reservas],
+    () =>
+      [...reservas]
+        .filter((r) => r.inicioReserva.startsWith(hoje) || formatHora(r.inicioReserva) >= "00:00" && r.fimReserva.startsWith(hoje))
+        .filter((r) => {
+          const d = parseISO(r.inicioReserva);
+          const rDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          return rDate === hoje;
+        })
+        .sort((a, b) => a.inicioReserva.localeCompare(b.inicioReserva)),
+    [reservas, hoje],
   );
 
-  const hours = useMemo(
-    () => Array.from({ length: 12 }, (_, i) => String(i + 11).padStart(2, "0")),
-    [],
-  );
+  const hours = useMemo(() => {
+    const diaSemana = new Date().getDay();
+    const turnosDoDia = horarios.filter(
+      (h) => h.diaSemana === diaSemana && h.ativo,
+    );
+
+    if (turnosDoDia.length > 0) {
+      const minH = Math.min(...turnosDoDia.map((t) => parseInt(t.horaAbertura.split(":")[0], 10)));
+      const maxH = Math.max(...turnosDoDia.map((t) => parseInt(t.horaFechamento.split(":")[0], 10)));
+      const count = maxH - minH + 1;
+      return Array.from({ length: count }, (_, i) => String(i + minH).padStart(2, "0"));
+    }
+
+    return Array.from({ length: 12 }, (_, i) => String(i + 11).padStart(2, "0"));
+  }, [horarios]);
 
   const handleDelete = async () => {
     if (!idToDelete) return;

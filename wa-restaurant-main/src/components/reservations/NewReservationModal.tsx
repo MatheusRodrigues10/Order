@@ -295,8 +295,17 @@ export function NewReservationModal({
       toast.error("Informe a quantidade de pessoas");
       return;
     }
+    const nomeClienteTrim = nomeCliente.trim();
+    if (!nomeClienteTrim) {
+      toast.error("Informe o nome do cliente");
+      return;
+    }
     const phoneDigits = telefone.replace(/\D/g, "");
-    if (phoneDigits.length > 0 && phoneDigits.length < 10) {
+    if (phoneDigits.length === 0) {
+      toast.error("Informe o telefone do cliente");
+      return;
+    }
+    if (phoneDigits.length < 10) {
       toast.error("Telefone incompleto. Informe o DDD e o número completo.");
       return;
     }
@@ -335,8 +344,8 @@ export function NewReservationModal({
         data,
         hora,
         duracaoMinutos: duracaoAtiva,
-        nomeCliente: nomeCliente.trim() || undefined,
-        telefone: telefone.trim() || undefined,
+        nomeCliente: nomeClienteTrim,
+        telefone: telefone.trim(),
       });
 
       const mesasLabel =
@@ -548,24 +557,22 @@ export function NewReservationModal({
           {/* Nome e Telefone */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>
-                Nome do cliente <span className="text-muted-foreground">(opcional)</span>
-              </Label>
+              <Label>Nome do cliente</Label>
               <Input
                 type="text"
+                required
                 value={nomeCliente}
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Ex.: João Silva"
               />
             </div>
             <div>
-              <Label>
-                Telefone <span className="text-muted-foreground">(opcional)</span>
-              </Label>
+              <Label>Telefone</Label>
               <Input
                 type="tel"
                 inputMode="numeric"
                 maxLength={15}
+                required
                 value={telefone}
                 onChange={(e) => setTel(maskTelefone(e.target.value))}
                 placeholder="(11) 99999-9999"

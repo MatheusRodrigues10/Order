@@ -24,6 +24,9 @@ function SettingsPage() {
   const [lugaresPorMesa, setLugares] = useState("");
   const [duracaoReservaMinutos, setDuracao] = useState("");
   const [tempoLimpezaMinutos, setLimpeza] = useState("");
+  const [abertura, setAbertura] = useState("");
+  const [fechamento, setFechamento] = useState("");
+  const [pin, setPin] = useState("");
 
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -33,6 +36,8 @@ function SettingsPage() {
     setLugares(String(config.lugaresPorMesa));
     setDuracao(String(config.duracaoReservaMinutos));
     setLimpeza(String(config.tempoLimpezaMinutos));
+    setAbertura(config.horarioAbertura);
+    setFechamento(config.horarioFechamento);
   }, [config]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["config"] });
@@ -67,6 +72,81 @@ function SettingsPage() {
       </header>
 
       <div className="grid gap-4 md:grid-cols-2">
+        {/* Horário global */}
+        <Section title="Horário global">
+          <p className="text-xs text-muted-foreground">
+            Horário padrão usado quando não há turnos configurados para o dia.
+          </p>
+          <Field
+            label="Abertura"
+            type="time"
+            value={abertura}
+            onChange={setAbertura}
+          />
+          <Field
+            label="Fechamento"
+            type="time"
+            value={fechamento}
+            onChange={setFechamento}
+          />
+          <Button
+            size="sm"
+            disabled={saving === "horario"}
+            onClick={() => {
+              if (!abertura || !fechamento) {
+                toast.error("Preencha abertura e fechamento");
+                return;
+              }
+              if (abertura >= fechamento) {
+                toast.error("Abertura deve ser anterior ao fechamento");
+                return;
+              }
+              save("horario", () => api.admin.updateHorario(abertura, fechamento));
+            }}
+          >
+            {saving === "horario" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Salvar horário
+          </Button>
+        </Section>
+
+        {/* PIN da API */}
+        <Section title="PIN da API externa">
+          <p className="text-xs text-muted-foreground">
+            PIN usado para autenticar chamadas da IA via header X-API-PIN.
+          </p>
+          <Field
+            label="Novo PIN (4-20 caracteres)"
+            value={pin}
+            onChange={setPin}
+            placeholder="Digite o novo PIN"
+          />
+          <Button
+            size="sm"
+            disabled={saving === "pin" || pin.length < 4}
+            onClick={() => {
+              if (pin.length < 4 || pin.length > 20) {
+                toast.error("PIN deve ter entre 4 e 20 caracteres");
+                return;
+              }
+              save("pin", async () => {
+                await api.admin.updatePin(pin);
+                setPin("");
+              });
+            }}
+          >
+            {saving === "pin" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Atualizar PIN
+          </Button>
+        </Section>
+
         {/* Mesas */}
         <Section title="Mesas">
           <Field
