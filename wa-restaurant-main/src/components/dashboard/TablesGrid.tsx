@@ -1,9 +1,10 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type MesaInfo } from "@/lib/api";
 import { TableCard } from "./TableCard";
 import { TableActionsModal } from "./TableActionsModal";
 import { RefreshCw } from "lucide-react";
+
 
 export function TablesGrid() {
   const queryClient = useQueryClient();
@@ -21,17 +22,7 @@ export function TablesGrid() {
   });
 
   const lugaresPorMesa = config?.lugaresPorMesa ?? 4;
-
   const [selected, setSelected] = useState<MesaInfo | null>(null);
-
-  // Build the set of secondary mesas (skipped — visually merged into the primary card)
-  const secondaryMesas = new Set<number>();
-  for (const mesa of mesas) {
-    if (mesa.reserva?.mesasJuntadas && mesa.reserva.mesasJuntadas.length > 0) {
-      const all = [mesa.numero, ...mesa.reserva.mesasJuntadas].sort((a, b) => a - b);
-      all.slice(1).forEach((n) => secondaryMesas.add(n));
-    }
-  }
 
   if (isLoading) {
     return (
@@ -42,25 +33,55 @@ export function TablesGrid() {
     );
   }
 
+  const sorted = [...mesas].sort((a, b) => a.numero - b.numero);
+
+  const mesaToGroup = new Map<number, { all: number[]; primary: number }>();
+  for (const mesa of sorted) {
+    if (mesa.reserva?.grupoReservaId && mesa.reserva.mesasJuntadas?.length) {
+      const all = [mesa.numero, ...mesa.reserva.mesasJuntadas].sort((a, b) => a - b);
+      for (const n of all) mesaToGroup.set(n, { all, primary: all[0] });
+    }
+  }
+
+  const secondarySet = new Set<number>();
+  for (const [n, g] of mesaToGroup) {
+    if (n !== g.primary) secondarySet.add(n);
+  }
+
+  const items: React.ReactElement[] = [];
+
+  for (const mesa of sorted) {
+    if (secondarySet.has(mesa.numero)) continue;
+
+    const group = mesaToGroup.get(mesa.numero);
+
+    if (group) {
+      const span = group.all.length;
+      items.push(
+        <div
+          key={mesa.numero}
+          style={{ gridColumn: `span ${span}` }}
+          className="flex min-h-0"
+        >
+          <TableCard mesa={mesa} lugaresPorMesa={lugaresPorMesa} onClick={setSelected} />
+        </div>
+      );
+    } else {
+      items.push(
+        <div key={mesa.numero} className="flex min-h-0">
+          <TableCard mesa={mesa} lugaresPorMesa={lugaresPorMesa} onClick={setSelected} />
+        </div>
+      );
+    }
+  }
+
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
-        {mesas.map((mesa) => {
-          if (secondaryMesas.has(mesa.numero)) return null;
-
-          const mesasJuntadas = mesa.reserva?.mesasJuntadas ?? [];
-          const span = mesasJuntadas.length > 0 ? mesasJuntadas.length + 1 : 1;
-
-          return (
-            <div
-              key={mesa.numero}
-              style={span > 1 ? { gridColumn: `span ${span}` } : undefined}
-              className="flex"
-            >
-              <TableCard mesa={mesa} lugaresPorMesa={lugaresPorMesa} onClick={setSelected} />
-            </div>
-          );
-        })}
+      <div
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7"
+        style={{ gridAutoRows: "minmax(90px, auto)" }}
+      >
+        {items}
       </div>
 
       <TableActionsModal

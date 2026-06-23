@@ -3,12 +3,38 @@ import { z } from "zod";
 const horaRegex = /^\d{2}:\d{2}$/;
 const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
 
-const nomeClienteObrigatorio = z.string()
+const quantidadePessoas = z.coerce
+  .number({ error: "Quantidade de pessoas é obrigatória e deve ser um número" })
+  .int("Quantidade de pessoas deve ser um número inteiro")
+  .min(1, "Quantidade de pessoas deve ser pelo menos 1");
+
+const duracaoMinutosOpt = z.coerce
+  .number({ error: "Duração deve ser um número" })
+  .int("Duração deve ser um número inteiro")
+  .min(30, "Duração mínima é 30 minutos")
+  .optional();
+
+const dataString = z
+  .string({ error: "Data é obrigatória" })
+  .regex(dataRegex, "Formato YYYY-MM-DD");
+
+const horaString = z
+  .string({ error: "Hora é obrigatória" })
+  .regex(horaRegex, "Formato HH:MM")
+  .refine(
+    (val: string) => {
+      const [h, m] = val.split(":").map(Number);
+      return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+    },
+    { message: "Hora inválida (HH: 00-23, MM: 00-59)" }
+  );
+
+const nomeClienteObrigatorio = z.string({ error: "Nome do cliente é obrigatório" })
   .trim()
   .min(1, "Nome do cliente é obrigatório")
   .max(120, "Nome do cliente deve ter no máximo 120 caracteres");
 
-const telefoneObrigatorio = z.string()
+const telefoneObrigatorio = z.string({ error: "Telefone é obrigatório" })
   .trim()
   .min(1, "Telefone é obrigatório")
   .max(30, "Telefone deve ter no máximo 30 caracteres")
@@ -17,21 +43,13 @@ const telefoneObrigatorio = z.string()
     return digits.length >= 10 && digits.length <= 11;
   }, "Telefone incompleto. Informe o DDD e o número completo.");
 
-const horaString = z.string().regex(horaRegex, "Formato HH:MM").refine(
-  (val: string) => {
-    const [h, m] = val.split(":").map(Number);
-    return h >= 0 && h <= 23 && m >= 0 && m <= 59;
-  },
-  { message: "Hora inválida (HH: 00-23, MM: 00-59)" }
-);
-
 export const criarReservaAdminSchema = z.object({
   body: z.object({
-    mesa: z.coerce.number().int().positive(),
-    quantidadePessoas: z.coerce.number().int().min(1),
-    data: z.string().regex(dataRegex, "Formato YYYY-MM-DD"),
+    mesa: z.coerce.number({ error: "Número da mesa é obrigatório" }).int().positive("Número da mesa inválido"),
+    quantidadePessoas,
+    data: dataString,
     hora: horaString,
-    duracaoMinutos: z.coerce.number().int().min(30).optional(),
+    duracaoMinutos: duracaoMinutosOpt,
     nomeCliente: nomeClienteObrigatorio,
     telefone: telefoneObrigatorio
   })
@@ -39,10 +57,10 @@ export const criarReservaAdminSchema = z.object({
 
 export const reservarExternalSchema = z.object({
   body: z.object({
-    quantidadePessoas: z.coerce.number().int().min(1),
-    data: z.string().regex(dataRegex, "Formato YYYY-MM-DD"),
+    quantidadePessoas,
+    data: dataString,
     hora: horaString,
-    duracaoMinutos: z.coerce.number().int().min(30).optional(),
+    duracaoMinutos: duracaoMinutosOpt,
     nomeCliente: nomeClienteObrigatorio,
     telefone: telefoneObrigatorio
   })
@@ -50,8 +68,8 @@ export const reservarExternalSchema = z.object({
 
 export const disponibilidadeQuerySchema = z.object({
   query: z.object({
-    quantidadePessoas: z.coerce.number().int().min(1),
-    duracaoMinutos: z.coerce.number().int().min(30).optional(),
+    quantidadePessoas,
+    duracaoMinutos: duracaoMinutosOpt,
     dataInicio: z.string().regex(dataRegex, "Formato YYYY-MM-DD").optional(),
     dataFim: z.string().regex(dataRegex, "Formato YYYY-MM-DD").optional()
   })
@@ -102,7 +120,7 @@ export const pinSchema = z.object({
 
 export const statusQuerySchema = z.object({
   query: z.object({
-    data: z.string().regex(dataRegex, "Formato YYYY-MM-DD"),
+    data: dataString,
     hora: horaString
   })
 });
@@ -144,7 +162,7 @@ export const salvarHorarioFuncionamentoSchema = z.object({
 
 export const criarEventDaySchema = z.object({
   body: z.object({
-    data: z.string().regex(dataRegex, "Formato YYYY-MM-DD"),
+    data: dataString,
     nomeCliente: z.string().min(1).max(120),
     telefone: z.string().min(1).max(30),
     motivo: z.string().min(1).max(200).optional()
@@ -153,6 +171,6 @@ export const criarEventDaySchema = z.object({
 
 export const eventDayParamSchema = z.object({
   params: z.object({
-    data: z.string().regex(dataRegex, "Formato YYYY-MM-DD")
+    data: dataString
   })
 });
