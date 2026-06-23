@@ -12,3 +12,20 @@ logs/
 
 # Coverage
 coverage
+
+# Backups e temporários
+*.bak
+*.old
+*.tmp
+*.dump
+*.sql.gz
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

@@ -15,7 +15,7 @@ model Settings {
   tempoLimpezaMinutos   Int    @default(30)
   horarioAbertura       String @default("11:00")
   horarioFechamento     String @default("23:00")
-  apiPin                String @default("123456")
+  apiPin                String
 
   @@map("settings")
 }

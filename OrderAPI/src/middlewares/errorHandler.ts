@@ -6,10 +6,11 @@ import { env } from "../config/env";
 
 export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (error instanceof ZodError) {
+    const sanitized = error.issues.map(({ path, message, code }) => ({ path, message, code }));
     return res.status(400).json({
       success: false,
       message: "Erro de validação",
-      errors: error.issues
+      errors: sanitized
     });
   }
 
