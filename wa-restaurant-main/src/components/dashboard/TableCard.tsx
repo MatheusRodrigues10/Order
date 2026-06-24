@@ -54,62 +54,92 @@ export function TableCard({ mesa, lugaresPorMesa = 4, onClick }: TableCardProps)
       type="button"
       onClick={() => onClick?.(mesa)}
       className={cn(
-        "group relative flex w-full flex-col gap-2 overflow-hidden rounded-md border border-border/60 border-l-4",
-        "bg-card px-3 py-3 text-left transition-all",
+        "group relative flex h-full w-full overflow-hidden rounded-md border border-border/60 border-l-4 bg-card transition-all",
+        isGrouped
+          ? "flex-col items-center justify-center gap-1 px-2 py-3 text-center sm:px-3"
+          : "flex-col gap-1.5 px-2 py-2.5 text-left sm:gap-2 sm:px-3 sm:py-3",
         "hover:-translate-y-0.5 hover:border-gold/40 hover:shadow-[var(--shadow-card)]",
         "focus:outline-none focus:ring-2 focus:ring-gold/40",
         STATUS_RING[mesa.status],
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          {/* Title */}
-          <div className="font-display text-xl leading-none text-foreground">
-            {isGrouped ? `Mesa ${allMesaNums.join(" · ")}` : `Mesa ${mesa.numero}`}
+      {isGrouped ? (
+        <>
+          <span
+            className={cn("absolute right-2 top-2 h-2 w-2 shrink-0 rounded-full", STATUS_DOT[mesa.status])}
+            aria-label={STATUS_LABELS[mesa.status]}
+          />
+
+          <div className="font-display text-lg leading-none text-foreground sm:text-xl">
+            {`Mesa ${allMesaNums.join(" · ")}`}
           </div>
 
-          {/* Capacity */}
-          <div className="mt-1 flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            {isGrouped && <Link className="h-2.5 w-2.5 shrink-0" />}
-            {isGrouped
-              ? `${totalLugares} lugares (${allMesaNums.length} mesas)`
-              : `${lugaresPorMesa} lugares`}
+          <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            <Link className="h-2.5 w-2.5 shrink-0" />
+            {`${totalLugares} lugares (${allMesaNums.length} mesas)`}
           </div>
-        </div>
 
-        <span
-          className={cn("mt-0.5 h-2 w-2 shrink-0 rounded-full", STATUS_DOT[mesa.status])}
-          aria-label={STATUS_LABELS[mesa.status]}
-        />
-      </div>
+          {(mesa.status === "reserved" || mesa.status === "occupied") && mesa.reserva && (
+            <div className="mt-1 space-y-0.5">
+              {mesa.reserva.nomeCliente && (
+                <p className="line-clamp-2 text-xs font-medium text-foreground sm:line-clamp-1">
+                  {mesa.reserva.nomeCliente}
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                {mesa.reserva.quantidadePessoas} pessoa
+                {mesa.reserva.quantidadePessoas !== 1 ? "s" : ""} ·{" "}
+                {formatHora(mesa.reserva.inicioReserva)}
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="flex items-start justify-between gap-1">
+            <div className="min-w-0">
+              <div className="font-display text-base leading-none text-foreground sm:text-xl">
+                Mesa {mesa.numero}
+              </div>
+              <div className="mt-1 text-[10px] uppercase tracking-[0.12em] text-muted-foreground sm:tracking-[0.18em]">
+                {lugaresPorMesa} lugares
+              </div>
+            </div>
+            <span
+              className={cn("mt-0.5 h-2 w-2 shrink-0 rounded-full", STATUS_DOT[mesa.status])}
+              aria-label={STATUS_LABELS[mesa.status]}
+            />
+          </div>
 
-      <div className="mt-auto">
-        {mesa.status === "available" && (
-          <p className="text-xs text-status-available/90">Disponível</p>
-        )}
-        {mesa.status === "blocked" && (
-          <p className="line-clamp-1 text-xs text-muted-foreground">
-            {mesa.bloqueio?.motivo ?? "Bloqueada"}
-          </p>
-        )}
-        {mesa.status === "cleaning" && (
-          <p className="text-xs text-status-cleaning/90">Em limpeza</p>
-        )}
-        {(mesa.status === "reserved" || mesa.status === "occupied") && mesa.reserva && (
-          <div className="space-y-0.5">
-            {mesa.reserva.nomeCliente && (
-              <p className="line-clamp-1 text-xs font-medium text-foreground">
-                {mesa.reserva.nomeCliente}
+          <div className="mt-auto min-w-0">
+            {mesa.status === "available" && (
+              <p className="text-xs text-status-available/90">Disponível</p>
+            )}
+            {mesa.status === "blocked" && (
+              <p className="line-clamp-2 text-xs text-muted-foreground sm:line-clamp-1">
+                {mesa.bloqueio?.motivo ?? "Bloqueada"}
               </p>
             )}
-            <p className="text-[11px] text-muted-foreground">
-              {mesa.reserva.quantidadePessoas} pessoa
-              {mesa.reserva.quantidadePessoas !== 1 ? "s" : ""} ·{" "}
-              {formatHora(mesa.reserva.inicioReserva)}
-            </p>
+            {mesa.status === "cleaning" && (
+              <p className="text-xs text-status-cleaning/90">Em limpeza</p>
+            )}
+            {(mesa.status === "reserved" || mesa.status === "occupied") && mesa.reserva && (
+              <div className="space-y-0.5">
+                {mesa.reserva.nomeCliente && (
+                  <p className="line-clamp-2 text-xs font-medium text-foreground sm:line-clamp-1">
+                    {mesa.reserva.nomeCliente}
+                  </p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  {mesa.reserva.quantidadePessoas} pessoa
+                  {mesa.reserva.quantidadePessoas !== 1 ? "s" : ""} ·{" "}
+                  {formatHora(mesa.reserva.inicioReserva)}
+                </p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </button>
   );
 }

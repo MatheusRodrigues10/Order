@@ -11,16 +11,6 @@ export class MesaBloqueioService {
     private readonly reservaRepository = new ReservaRepository()
   ) {}
 
-  async listar() {
-    const bloqueios = await this.repo.findAll();
-    return bloqueios.map((b) => ({
-      numeroMesa: b.numeroMesa,
-      bloqueadaPor: b.bloqueadaPor,
-      motivo: b.motivo,
-      bloqueadaEm: formatDateTimeBr(b.bloqueadaEm)
-    }));
-  }
-
   async bloquear(numeroMesa: number, bloqueadaPor: string, motivo?: string) {
     const settings = await this.settingsService.getSettings();
 

@@ -16,7 +16,12 @@ async function main() {
   }
 
   // ── Settings ────────────────────────────────────────────────────────────────
-  const apiPinHash = await bcrypt.hash(process.env.DEFAULT_API_PIN ?? "123456", 12);
+  const apiPin = process.env.DEFAULT_API_PIN;
+  if (!apiPin) {
+    console.error("DEFAULT_API_PIN precisa estar definido no .env para criar as settings.");
+    process.exit(1);
+  }
+  const apiPinHash = await bcrypt.hash(apiPin, 12);
   await prisma.settings.upsert({
     where: { id: 1 },
     update: {},

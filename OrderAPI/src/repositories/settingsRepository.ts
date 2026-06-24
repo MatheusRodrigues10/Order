@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
+import { env } from "../config/env";
 import { prisma } from "../config/prisma";
 
-const DEFAULT_PIN_HASH = bcrypt.hashSync(process.env.DEFAULT_API_PIN ?? "123456", 12);
+const DEFAULT_PIN_HASH = bcrypt.hashSync(env.DEFAULT_API_PIN, 12);
 
 export class SettingsRepository {
   find() {

@@ -452,17 +452,16 @@ async reserveAuto(
     throw new AppError("Não há mesas suficientes disponíveis para essa quantidade de pessoas", 409);
   }
 
+  const grupoReservaId = mesasNecessarias > 1 ? randomUUID() : undefined;
   const reservasCriadas = [];
-  let pessoasRestantes = quantidadePessoas;
 
   for (const mesa of mesasLivres) {
     if (reservasCriadas.length >= mesasNecessarias) break;
 
-    const quantidadeNaMesa = Math.min(pessoasRestantes, settings.lugaresPorMesa);
-
     const reserva = await this.reservaRepo.createIfFree({
       numeroMesa: mesa,
-      quantidadePessoas: quantidadeNaMesa,
+      grupoReservaId,
+      quantidadePessoas,
       nomeCliente,
       telefone,
       inicioReserva,
@@ -472,11 +471,13 @@ async reserveAuto(
 
     if (reserva) {
       reservasCriadas.push(reserva);
-      pessoasRestantes -= quantidadeNaMesa;
     }
   }
 
   if (reservasCriadas.length < mesasNecessarias) {
+    if (grupoReservaId && reservasCriadas.length > 0) {
+      await this.reservaRepo.deleteByGrupoId(grupoReservaId);
+    }
     throw new AppError("Não foi possível reservar mesas suficientes", 409);
   }
 

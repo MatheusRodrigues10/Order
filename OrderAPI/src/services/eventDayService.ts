@@ -1,10 +1,10 @@
 import { AppError } from "../utils/AppError";
 import { EventDayRepository } from "../repositories/eventDayRepository";
 import { formatDateTimeBr } from "../utils/dateFormat";
+import { DIAS_SEMANA } from "./horarioFuncionamentoService";
 
 const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
 
-const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 export class EventDayService {

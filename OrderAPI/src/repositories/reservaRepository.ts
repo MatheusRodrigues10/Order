@@ -33,16 +33,6 @@ export class ReservaRepository {
     });
   }
 
-  findMesaConflicts(numeroMesa: number, inicioReserva: Date, fimLimpeza: Date) {
-    return prisma.reserva.findMany({
-      where: {
-        numeroMesa,
-        inicioReserva: { lt: fimLimpeza },
-        fimLimpeza: { gt: inicioReserva }
-      }
-    });
-  }
-
   findHighestReservedMesa() {
     return prisma.reserva.findFirst({
       where: { fimLimpeza: { gt: new Date() } },
