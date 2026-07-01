@@ -8,7 +8,6 @@
  * Comando: npm run seed:demo
  */
 import "dotenv/config";
-import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 
@@ -61,7 +60,7 @@ async function main() {
   console.log("║     seed-demo — WA Restaurant  (ambiente de dev/teste)    ║");
   console.log("╚════════════════════════════════════════════════════════════╝");
   console.log(`  Data/hora: ${now.toLocaleString("pt-BR")}`);
-  console.log(`  Database : ${process.env.DATABASE_URL?.match(/@(.+?)\//)?.[1] ?? "local"}\n`);
+  console.log(`  Database : conectado\n`);
 
   // ── 1. Settings ─────────────────────────────────────────────────────────────
   console.log("─── 1. Settings ────────────────────────────────────────────");
@@ -71,7 +70,6 @@ async function main() {
     console.error("DEFAULT_API_PIN precisa estar definido no .env para criar as settings.");
     process.exit(1);
   }
-  const apiPinHash = await bcrypt.hash(apiPin, 12);
   await prisma.settings.upsert({
     where:  { id: 1 },
     update: {
@@ -90,7 +88,7 @@ async function main() {
       tempoLimpezaMinutos:    30,
       horarioAbertura:    "11:00",
       horarioFechamento:  "23:00",
-      apiPin:          apiPinHash,
+      apiPin,
     },
   });
 
@@ -360,7 +358,7 @@ async function main() {
   console.log("");
   console.log("  7. Dados de produção:");
   console.log("     NÃO alterados. Seed rodou apenas no banco configurado em .env.");
-  console.log(`     Host: ${process.env.DATABASE_URL?.match(/@(.+?)\//)?.[1] ?? "(não identificado)"}`);
+  console.log("     Banco: conectado com sucesso.");
   console.log("     Admin e credenciais foram preservados.");
   console.log("╚════════════════════════════════════════════════════════════╝");
 }

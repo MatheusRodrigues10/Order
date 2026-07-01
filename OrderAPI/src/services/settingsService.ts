@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import { AppError } from "../utils/AppError";
 import { ReservaRepository } from "../repositories/reservaRepository";
 import { SettingsRepository } from "../repositories/settingsRepository";
@@ -43,7 +42,6 @@ export class SettingsService {
   }
 
   async updatePin(pin: string) {
-    const hash = await bcrypt.hash(pin, 12);
-    return this.repo.updatePin(hash);
+    return this.repo.updatePin(pin);
   }
 }

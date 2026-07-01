@@ -269,7 +269,6 @@ export function TableActionsModal({ mesa, lugaresPorMesa = 4, open, onClose, onA
       <NewReservationModal
         open={openNew}
         onClose={() => setOpenNew(false)}
-        prefillTableId={mesa.numero}
         onSuccess={handleAction}
       />
     </>

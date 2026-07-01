@@ -22,6 +22,13 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
     });
   }
 
+  if (error instanceof SyntaxError && "body" in error) {
+    return res.status(400).json({
+      success: false,
+      message: "JSON inválido no corpo da requisição"
+    });
+  }
+
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
     return res.status(404).json({ success: false, message: "Registro não encontrado" });
   }

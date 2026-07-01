@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>WA Restaurant — Agente NoveTalk</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#090d11;font-family:'Segoe UI',system-ui,sans-serif;color:#e9edef;overflow:hidden}
+
+/* layout */
+#root{display:flex;flex-direction:column;height:100%;max-width:1500px;margin:0 auto}
+
+/* tabs */
+#tabs{display:flex;gap:6px;padding:8px 10px;background:#111b21;border-bottom:1px solid #1e2d34;overflow-x:auto;flex-shrink:0}
+#tabs::-webkit-scrollbar{display:none}
+.tab{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,.15);color:#8696a0;background:transparent;white-space:nowrap;flex-shrink:0;outline:none}
+.tab.on{background:#00a884;border-color:#00a884;color:#fff}
+
+/* two columns */
+#cols{display:flex;flex:1;overflow:hidden}
+
+/* chat */
+#chat-col{display:flex;flex-direction:column;width:50%;min-width:280px;background:#111b21}
+#chat-hdr{background:#202c33;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.05)}
+.av{width:36px;height:36px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.cn{font-size:14px;color:#e9edef;font-weight:500}
+.cs{font-size:11px;color:#00a884}
+#msgs{flex:1;overflow-y:auto;padding:12px 5%;display:flex;flex-direction:column;gap:3px;background:#0b141a}
+#msgs::-webkit-scrollbar{width:4px}
+#msgs::-webkit-scrollbar-thumb{background:#2a3942;border-radius:4px}
+.dchip{text-align:center;margin:8px 0}
+.dchip span{background:#182229;color:#8696a0;font-size:11px;padding:3px 11px;border-radius:6px}
+.row{display:flex;flex-direction:column}
+.row.out{align-items:flex-end}
+.row.in{align-items:flex-start}
+.lbl{font-size:10.5px;font-weight:700;margin-bottom:2px;padding:0 3px;color:#4ade80}
+.bub{max-width:80%;padding:7px 10px 5px;font-size:13.5px;line-height:1.55;position:relative;word-break:break-word;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.bub.in{background:#202c33;color:#e9edef;border-radius:0 9px 9px 9px}
+.bub.out{background:#005c4b;color:#e9edef;border-radius:9px 0 9px 9px}
+.ti{position:absolute;top:0;left:-7px;width:0;height:0;border-top:7px solid #202c33;border-left:7px solid transparent}
+.to{position:absolute;top:0;right:-7px;width:0;height:0;border-top:7px solid #005c4b;border-right:7px solid transparent}
+.meta{display:flex;justify-content:flex-end;gap:3px;margin-top:3px}
+.mt{font-size:10px;color:#8696a0}
+.tk{font-size:12px;color:#53bdeb}
+.qr{border-top:1px solid rgba(255,255,255,.07);margin-top:6px;padding-top:5px}
+.qb{color:#53bdeb;font-size:12.5px;text-align:center;padding:4px 5px}
+.pill{display:flex;justify-content:center;margin:6px 0}
+.pill span{background:#0f172a;border:1px solid #334155;border-radius:20px;padding:3px 12px;font-size:11px;color:#a5b4fc;font-family:monospace}
+#bar{background:#202c33;padding:9px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.fake-input{flex:1;background:#2a3942;border-radius:20px;padding:8px 14px;color:#8696a0;font-size:13.5px}
+
+/* resizer */
+#rsz{width:4px;background:#21262d;cursor:col-resize;flex-shrink:0;transition:background .15s}
+#rsz:hover{background:#58a6ff}
+
+/* panel */
+#panel-col{flex:1;min-width:260px;display:flex;flex-direction:column;background:#0d1117;overflow:hidden}
+#phdr{padding:11px 14px;border-bottom:1px solid #21262d;flex-shrink:0}
+.pt{font-size:10.5px;font-weight:600;color:#6e7681;text-transform:uppercase;letter-spacing:.08em}
+.ps{font-size:10.5px;color:#6e7681;opacity:.6;margin-top:2px}
+#panel{flex:1;overflow-y:auto;padding:12px 12px 12px 14px}
+#panel::-webkit-scrollbar{width:7px}
+#panel::-webkit-scrollbar-track{background:#161b22}
+#panel::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px}
+#panel::-webkit-scrollbar-thumb:hover{background:#484f58}
+
+/* cards */
+.card{border-radius:8px;overflow:hidden;margin-bottom:10px}
+.card-hdr{padding:8px 12px;display:flex;align-items:center;gap:7px;border-bottom-width:1px;border-bottom-style:solid}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.card-body{padding:12px 13px;background:#0d1117}
+.desc{font-size:12.5px;color:#8b949e;line-height:1.65;margin-bottom:10px}
+.step{display:flex;gap:9px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.step:last-child{border-bottom:none}
+.sn{width:18px;height:18px;border-radius:50%;background:rgba(45,212,191,.12);color:#2dd4bf;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;margin-top:1px}
+.st{font-size:12.5px;color:#c9d1d9;line-height:1.5}
+.st em{color:#7ee787;font-style:normal;font-weight:600}
+pre.code{background:#010409;border-radius:6px;padding:11px 13px;font-size:12.5px;line-height:1.75;color:#c9d1d9;overflow-x:auto;border:1px solid rgba(255,255,255,.06);white-space:pre;font-family:'Cascadia Code','Fira Code',Consolas,monospace;margin-top:8px}
+pre.code::-webkit-scrollbar{height:4px}
+pre.code::-webkit-scrollbar-thumb{background:#30363d}
+.kw{color:#ff7b72}.url{color:#79c0ff}.str{color:#a5d6ff}.key{color:#7ee787}.num{color:#f2cc60}.cm{color:#6e7681;font-style:italic}
+.r201{display:inline-block;background:#0a2010;color:#3fb950;border:1px solid #1a4020;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700;margin-bottom:5px}
+.r409{display:inline-block;background:#180c0c;color:#f85149;border:1px solid #381818;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700;margin-bottom:5px}
+
+/* mobile: stack vertically */
+@media(max-width:640px){
+  #cols{flex-direction:column}
+  #chat-col{width:100%;min-height:55%}
+  #rsz{display:none}
+  #panel-col{min-width:unset;border-top:2px solid #21262d}
+}
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="tabs"></div>
+  <div id="cols">
+    <div id="chat-col">
+      <div id="chat-hdr">
+        <div class="av">WA</div>
+        <div>
+          <div class="cn">WA Restaurant &#x1F419;</div>
+          <div class="cs">online agora &middot; Santana, SP</div>
+        </div>
+      </div>
+      <div id="msgs"></div>
+      <div id="bar">
+        <div style="font-size:20px;color:#8696a0">&#x1F60A;</div>
+        <div class="fake-input">Mensagem</div>
+      </div>
+    </div>
+    <div id="rsz"></div>
+    <div id="panel-col">
+      <div id="phdr">
+        <div class="pt">&#x1F4CB; Anota&ccedil;&otilde;es do fluxo</div>
+        <div class="ps">Chamadas de API e l&oacute;gica da IA</div>
+      </div>
+      <div id="panel"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const H = (()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')})();
+
+const ANN={
+  now:  {bg:'#0d1433',bd:'#1e3a5f',tx:'#58a6ff'},
+  get:  {bg:'#0a1f12',bd:'#1a4a2a',tx:'#3fb950'},
+  post: {bg:'#1a1400',bd:'#4a3800',tx:'#d29922'},
+  resp: {bg:'#130e1e',bd:'#2e1e4a',tx:'#bc8cff'},
+  err:  {bg:'#180c0c',bd:'#3a1414',tx:'#f85149'},
+  logic:{bg:'#0a1616',bd:'#1a3a3a',tx:'#2dd4bf'},
+};
+
+const SCENES=[
+{label:'📅 Semana atual',msgs:[
+  {s:'bot',lbl:'IA — Reservas',text:'Olá! Bem-vindo ao *WA Restaurant* 🐙\n\nComo posso te ajudar?',opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento'],
+   ann:{t:'logic',ti:'Início — nenhuma API ainda',desc:'Mensagem de boas-vindas automática. A IA aguarda a escolha antes de qualquer chamada.',steps:[{n:1,t:'Cliente abre a conversa → bot envia saudação'},{n:2,t:'Menu exibido como quick replies'},{n:3,t:'Nenhuma API chamada neste passo'}]}},
+  {s:'user',text:'1 · Fazer uma reserva'},
+  {s:'bot',lbl:'IA — Reservas',text:'Ótimo! Quantas pessoas virão?',
+   ann:{t:'now',ti:'GET /api/now — chamado aqui',desc:'A IA não sabe a data de hoje. Chama /api/now imediatamente ao entrar no fluxo de reservas e salva "hoje" na memória da conversa. Sem isso não consegue calcular datas relativas.',code:`<span class="kw">GET</span> <span class="url">/api/now</span>
+<span class="cm">// X-API-PIN inserido automaticamente pelo NoveTalk</span>
+
+<span class="cm">// → Resposta:</span>
+{
+  <span class="key">"hoje"</span>: <span class="str">"2026-06-24"</span>,    <span class="cm">← âncora salva na memória</span>
+  <span class="key">"diaSemana"</span>: <span class="num">3</span>,        <span class="cm">← 0=Dom … 6=Sáb</span>
+  <span class="key">"diaSemanaNome"</span>: <span class="str">"Quarta"</span>,
+  <span class="key">"hora"</span>: <span class="str">"14:32"</span>,
+  <span class="key">"turnos"</span>: [
+    { <span class="key">"turno"</span>: <span class="num">2</span>,
+      <span class="key">"turnoNome"</span>: <span class="str">"Jantar"</span>,
+      <span class="key">"horaAbertura"</span>: <span class="str">"19:00"</span>,
+      <span class="key">"horaFechamento"</span>: <span class="str">"23:00"</span> }
+  ]
+}
+<span class="cm">// Com "hoje" a IA calcula qualquer data relativa:</span>
+<span class="cm">// "amanhã"       → 2026-06-25</span>
+<span class="cm">// "sábado"       → 2026-06-28</span>
+<span class="cm">// "semana que vem" → 2026-07-01</span>`}},
+  {s:'user',text:'Somos 4 pessoas'},
+  {s:'api',text:'GET /api/availability?quantidadePessoas=4',
+   ann:{t:'get',ti:'GET /api/availability — semana atual',desc:'Cliente informou 4 pessoas sem especificar data. A IA omite dataInicio e dataFim — o backend usa hoje até hoje+6 automaticamente. A IA nunca inventa horários: só oferece o que o array retornar.',code:`<span class="kw">GET</span> <span class="url">/api/availability</span>
+  ?quantidadePessoas=<span class="num">4</span>
+<span class="cm">// dataInicio omitido → backend usa 2026-06-24</span>
+<span class="cm">// dataFim omitido   → backend usa 2026-06-30</span>
+<span class="cm">// duracaoMinutos omitido → usa padrão do restaurante</span>
+
+<span class="cm">// → Resposta:</span>
+{ <span class="key">"dias"</span>: [
+    { <span class="key">"data"</span>: <span class="str">"2026-06-25"</span>, <span class="key">"diaSemanaNome"</span>: <span class="str">"Quarta"</span>,
+      <span class="key">"horarios"</span>: [
+        { <span class="key">"hora"</span>: <span class="str">"19:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">90</span> },
+        { <span class="key">"hora"</span>: <span class="str">"21:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">60</span> }
+      ]},
+    { <span class="key">"data"</span>: <span class="str">"2026-06-28"</span>, <span class="key">"diaSemanaNome"</span>: <span class="str">"Sábado"</span>,
+      <span class="key">"horarios"</span>: [
+        { <span class="key">"hora"</span>: <span class="str">"19:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">90</span> },
+        { <span class="key">"hora"</span>: <span class="str">"20:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">90</span> },
+        { <span class="key">"hora"</span>: <span class="str">"21:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">60</span> }
+      ]}
+  ]
+}
+<span class="cm">// duracaoMaximaMinutos: IA só usa se cliente perguntar</span>
+<span class="cm">// quanto tempo pode ficar. Caso contrário, ignora.</span>`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Achei as opções dessa semana pra 4 pessoas:\n\n📅 Qua 25/06 — 19h ou 21h\n📅 Sáb 28/06 — 19h, 20h ou 21h\n\nTem alguma que te agrada? Ou prefere outra data?'},
+  {s:'user',text:'Sábado às 20h tá ótimo!'},
+  {s:'bot',lbl:'IA — Reservas',text:'Perfeito! Pra finalizar, qual é o seu nome?',
+   ann:{t:'logic',ti:'Coleta de nome — sem API',desc:'A IA já tem data, hora e quantidade de pessoas. O telefone vem automaticamente do número do WhatsApp (injetado pelo NoveTalk). Só falta o nome.',steps:[{n:1,t:'Armazenado: <em>data=2026-06-28, hora=20:00, pessoas=4</em>'},{n:2,t:'<em>telefone</em> = número WA do cliente (NoveTalk injeta automaticamente)'},{n:3,t:'Falta apenas nomeCliente → IA pergunta'},{n:4,t:'Nenhuma chamada de API neste passo'}]}},
+  {s:'user',text:'Ana Lima'},
+  {s:'bot',lbl:'IA — Reservas',text:'Perfeito, Ana! Confirma pra mim:\n\n📅 Sábado, 28/06\n🕐 20h00\n👥 4 pessoas\n👤 Ana Lima\n📍 R. Damásio Mascarenhas, 160 — Santana\n\nTá certinho?',opts:['Sim, pode confirmar!','Preciso alterar algo'],
+   ann:{t:'logic',ti:'Resumo — aguarda confirmação explícita',desc:'A IA NUNCA cria a reserva sem confirmação do cliente. Se ele quiser alterar, a IA volta ao passo correspondente sem chamar POST.',steps:[{n:1,t:'Resumo exibido com todos os dados coletados'},{n:2,t:'"Sim" → dispara POST /api/reservations'},{n:3,t:'"Alterar algo" → volta ao passo, sem criar nada'},{n:4,t:'Nenhuma API chamada neste passo'}]}},
+  {s:'user',text:'Sim, pode confirmar!'},
+  {s:'api',text:'POST /api/reservations',
+   ann:{t:'post',ti:'POST /api/reservations — após confirmação',desc:'Chamado uma única vez, somente após o cliente confirmar. nomeCliente e telefone são campos obrigatórios — a API rejeita sem eles.',code:`<span class="kw">POST</span> <span class="url">/api/reservations</span>
+Content-Type: application/json
+
+{
+  <span class="key">"quantidadePessoas"</span>: <span class="num">4</span>,
+  <span class="key">"data"</span>:             <span class="str">"2026-06-28"</span>,
+  <span class="key">"hora"</span>:             <span class="str">"20:00"</span>,
+  <span class="key">"nomeCliente"</span>:     <span class="str">"Ana Lima"</span>,
+  <span class="key">"telefone"</span>:        <span class="str">"11999999999"</span>
+  <span class="cm">// duracaoMinutos omitido → usa padrão do restaurante</span>
+}
+
+<span class="cm">// Campos obrigatórios: quantidadePessoas, data, hora,</span>
+<span class="cm">// nomeCliente (1–120 chars), telefone (DDD+número, 10–11 dígitos)</span>
+
+<span class="cm">// → Resposta de sucesso:</span>
+<span class="r201">201 Created</span>
+{
+  <span class="key">"ids"</span>:        [<span class="num">42</span>],
+  <span class="key">"mesas"</span>:      [<span class="num">7</span>],
+  <span class="key">"quantidadePessoas"</span>: <span class="num">4</span>,
+  <span class="key">"mesasNecessarias"</span>: <span class="num">1</span>,
+  <span class="key">"inicio"</span>:     <span class="str">"2026-06-28T20:00:00.000Z"</span>,
+  <span class="key">"fim"</span>:        <span class="str">"2026-06-28T21:30:00.000Z"</span>,
+  <span class="key">"fimLimpeza"</span>: <span class="str">"2026-06-28T21:45:00.000Z"</span>
+}
+<span class="cm">// IA confirma sucesso ao cliente.</span>
+<span class="cm">// NÃO exibe ids, mesas ou timestamps.</span>`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Reserva confirmada, Ana! ✔️\n\nA gente te espera no sábado! 😉🐙'},
+]},
+
+{label:'📆 Data específica',msgs:[
+  {s:'bot',lbl:'IA — Reservas',text:'Olá! Bem-vindo ao *WA Restaurant* 🐙\n\nComo posso te ajudar?',opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento'],
+   ann:{t:'now',ti:'GET /api/now — âncora obtida',desc:'Chamado ao entrar no intent de reservas. A IA salva "hoje" e usa como base para todos os cálculos de data da conversa.',code:`<span class="kw">GET</span> <span class="url">/api/now</span>
+<span class="cm">// Resultado salvo na memória:</span>
+{ <span class="key">"hoje"</span>: <span class="str">"2026-06-24"</span>, <span class="key">"diaSemanaNome"</span>: <span class="str">"Quarta"</span> }`}},
+  {s:'user',text:'1 · Fazer uma reserva'},
+  {s:'bot',lbl:'IA — Reservas',text:'Ótimo! Quantas pessoas virão?'},
+  {s:'user',text:'Somos 8 pessoas'},
+  {s:'api',text:'GET /api/availability?quantidadePessoas=8',
+   ann:{t:'get',ti:'GET /api/availability — semana atual',desc:'Primeira consulta sempre é a semana atual. Com 8 pessoas, menos mesas comportam — o backend filtra automaticamente.',code:`<span class="kw">GET</span> <span class="url">/api/availability</span>
+  ?quantidadePessoas=<span class="num">8</span>
+<span class="cm">// sem datas → hoje até hoje+6</span>
+
+{ <span class="key">"dias"</span>: [
+    { <span class="key">"data"</span>: <span class="str">"2026-06-26"</span>, <span class="key">"horarios"</span>: [{ <span class="key">"hora"</span>: <span class="str">"20:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">90</span> }] },
+    { <span class="key">"data"</span>: <span class="str">"2026-06-28"</span>, <span class="key">"horarios"</span>: [
+        { <span class="key">"hora"</span>: <span class="str">"19:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">90</span> },
+        { <span class="key">"hora"</span>: <span class="str">"21:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">60</span> }
+    ]}
+]}`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Achei as opções dessa semana pra 8 pessoas:\n\n📅 Sex 26/06 — 20h\n📅 Sáb 28/06 — 19h ou 21h\n\nTem alguma que te agrada? Ou prefere outra data?'},
+  {s:'user',text:'Prefiro dia 10 de julho, se possível'},
+  {s:'api',text:'GET /api/availability?quantidadePessoas=8&dataInicio=2026-07-10&dataFim=2026-07-10',
+   ann:{t:'get',ti:'GET /api/availability — data específica',desc:'Cliente disse "10 de julho". A IA usou a âncora hoje=2026-06-24 para calcular 2026-07-10. Quando dataInicio=dataFim, retorna só aquele dia. Se vier vazio, a IA informa indisponibilidade — nunca inventa.',code:`<span class="kw">GET</span> <span class="url">/api/availability</span>
+  ?quantidadePessoas=<span class="num">8</span>
+  &dataInicio=<span class="str">"2026-07-10"</span>
+  &dataFim=<span class="str">"2026-07-10"</span>
+
+<span class="cm">// Como a IA calculou "10 de julho":</span>
+<span class="cm">// âncora: hoje = "2026-06-24"</span>
+<span class="cm">// "10 de julho" → data absoluta → 2026-07-10</span>
+<span class="cm">// "amanhã"      → hoje + 1 → 2026-06-25</span>
+<span class="cm">// "sábado"      → próx sábado → 2026-06-28</span>
+<span class="cm">// "semana que vem" → hoje + 7 → 2026-07-01</span>
+
+{ <span class="key">"dias"</span>: [
+    { <span class="key">"data"</span>: <span class="str">"2026-07-10"</span>, <span class="key">"diaSemanaNome"</span>: <span class="str">"Sexta"</span>,
+      <span class="key">"horarios"</span>: [
+        { <span class="key">"hora"</span>: <span class="str">"19:30"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">90</span> },
+        { <span class="key">"hora"</span>: <span class="str">"21:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">90</span> }
+      ]
+    }
+]}`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Boa notícia! O dia 10/07 (sexta-feira) tem disponibilidade pra 8 pessoas:\n\n🕐 19h30\n🕐 21h00\n\nQual prefere?'},
+  {s:'user',text:'19h30 perfeito!'},
+  {s:'bot',lbl:'IA — Reservas',text:'Perfeito! Pra finalizar, qual é o seu nome?'},
+  {s:'user',text:'Carlos Mendes'},
+  {s:'bot',lbl:'IA — Reservas',text:'Perfeito, Carlos! Confirma pra mim:\n\n📅 Sexta, 10/07\n🕐 19h30\n👥 8 pessoas\n👤 Carlos Mendes\n📍 R. Damásio Mascarenhas, 160 — Santana\n\nTá certinho?',opts:['Sim, pode confirmar!','Preciso alterar algo']},
+  {s:'user',text:'Sim, confirmar!'},
+  {s:'api',text:'POST /api/reservations',
+   ann:{t:'post',ti:'POST /api/reservations',code:`<span class="kw">POST</span> <span class="url">/api/reservations</span>
+{
+  <span class="key">"quantidadePessoas"</span>: <span class="num">8</span>,
+  <span class="key">"data"</span>:             <span class="str">"2026-07-10"</span>,
+  <span class="key">"hora"</span>:             <span class="str">"19:30"</span>,
+  <span class="key">"nomeCliente"</span>:     <span class="str">"Carlos Mendes"</span>,      <span class="cm">// obrigatório</span>
+  <span class="key">"telefone"</span>:        <span class="str">"11988888888"</span>       <span class="cm">// obrigatório (10–11 díg.)</span>
+}
+<span class="r201">201 Created</span>
+{ <span class="key">"ids"</span>: [<span class="num">58</span>], <span class="key">"mesas"</span>: [<span class="num">3</span>,<span class="num">4</span>],
+  <span class="key">"quantidadePessoas"</span>: <span class="num">8</span>, <span class="key">"mesasNecessarias"</span>: <span class="num">2</span> }`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Reserva confirmada, Carlos! ✔️\n\nA gente te espera no dia 10! 😉🐙'},
+]},
+
+{label:'⏱️ Com duração',msgs:[
+  {s:'bot',lbl:'IA — Reservas',text:'Olá! Bem-vindo ao *WA Restaurant* 🐙\n\nComo posso te ajudar?',opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento'],
+   ann:{t:'now',ti:'GET /api/now — âncora obtida',code:`<span class="kw">GET</span> <span class="url">/api/now</span> → { <span class="key">"hoje"</span>: <span class="str">"2026-06-24"</span>, ... }`}},
+  {s:'user',text:'1 · Fazer uma reserva'},
+  {s:'bot',lbl:'IA — Reservas',text:'Ótimo! Quantas pessoas virão?'},
+  {s:'user',text:'Somos 2 pessoas'},
+  {s:'bot',lbl:'IA — Reservas',text:'Quanto tempo vocês planejam ficar? Assim consigo mostrar só os horários que comportam o tempo que vocês precisam 😊',
+   ann:{t:'logic',ti:'IA coleta duração antes de consultar',desc:'A IA pergunta a duração antes de chamar /api/availability. Assim o backend já filtra e retorna só os horários que cabem, sem a IA precisar fazer cálculos.',steps:[{n:1,t:'Coleta <em>duracaoMinutos</em> antes de /api/availability'},{n:2,t:'Backend filtra slots → IA só oferece o que veio no array'},{n:3,t:'Mesmo valor enviado no POST ao confirmar'}]}},
+  {s:'user',text:'Umas 2 horas seria ideal'},
+  {s:'api',text:'GET /api/availability?quantidadePessoas=2&duracaoMinutos=120',
+   ann:{t:'get',ti:'GET /api/availability — duracaoMinutos=120',desc:'O backend calcula: teto = min(120, minutosAtéFechamentoDoTurno). Slots com menos de 30min disponíveis são excluídos automaticamente. A IA não precisa calcular nada — recebe só o que cabe.',code:`<span class="kw">GET</span> <span class="url">/api/availability</span>
+  ?quantidadePessoas=<span class="num">2</span>
+  &duracaoMinutos=<span class="num">120</span>
+
+<span class="cm">// Backend por slot (turno fecha 23:00):</span>
+<span class="cm">// 19:00 → 240min até fechamento → teto=120 → aparece</span>
+<span class="cm">// 22:00 →  60min até fechamento → teto= 60 → omitido</span>
+<span class="cm">// 22:30 →  30min até fechamento → teto= 30 → omitido</span>
+
+{ <span class="key">"dias"</span>: [
+    { <span class="key">"data"</span>: <span class="str">"2026-06-25"</span>, <span class="key">"diaSemanaNome"</span>: <span class="str">"Quinta"</span>,
+      <span class="key">"horarios"</span>: [
+        { <span class="key">"hora"</span>: <span class="str">"19:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">120</span> },
+        { <span class="key">"hora"</span>: <span class="str">"19:30"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">120</span> }
+      ]},
+    { <span class="key">"data"</span>: <span class="str">"2026-06-28"</span>, <span class="key">"diaSemanaNome"</span>: <span class="str">"Sábado"</span>,
+      <span class="key">"horarios"</span>: [
+        { <span class="key">"hora"</span>: <span class="str">"19:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">120</span> },
+        { <span class="key">"hora"</span>: <span class="str">"20:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">120</span> }
+      ]}
+  <span class="cm">// 21:30, 22:00, 22:30 ausentes → não cabem 2h</span>
+]}`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Achei as opções dessa semana pra 2 pessoas com 2h de duração:\n\n📅 Qui 25/06 — 19h ou 19h30\n📅 Sáb 28/06 — 19h ou 20h\n\nTem alguma que te agrada? Ou prefere outra data?'},
+  {s:'user',text:'Sábado às 19h!'},
+  {s:'user',text:'Sou a Lara Santos'},
+  {s:'bot',lbl:'IA — Reservas',text:'Perfeito, Lara! Confirma pra mim:\n\n📅 Sábado, 28/06\n🕐 19h00\n👥 2 pessoas\n⏱️ 2 horas\n👤 Lara Santos\n📍 R. Damásio Mascarenhas, 160 — Santana\n\nTá certinho?',opts:['Sim, pode confirmar!','Preciso alterar algo']},
+  {s:'user',text:'Confirmar!'},
+  {s:'api',text:'POST /api/reservations — duracaoMinutos=120',
+   ann:{t:'post',ti:'POST /api/reservations — duração registrada',desc:'duracaoMinutos enviado junto. O backend calcula fimReserva e fimLimpeza com base nesse valor, bloqueando a mesa pelo tempo acordado.',code:`<span class="kw">POST</span> <span class="url">/api/reservations</span>
+{
+  <span class="key">"quantidadePessoas"</span>: <span class="num">2</span>,
+  <span class="key">"data"</span>:             <span class="str">"2026-06-28"</span>,
+  <span class="key">"hora"</span>:             <span class="str">"19:00"</span>,
+  <span class="key">"duracaoMinutos"</span>:  <span class="num">120</span>,
+  <span class="key">"nomeCliente"</span>:     <span class="str">"Lara Santos"</span>,       <span class="cm">// obrigatório</span>
+  <span class="key">"telefone"</span>:        <span class="str">"11977777777"</span>      <span class="cm">// obrigatório</span>
+}
+<span class="r201">201 Created</span>
+{
+  <span class="key">"ids"</span>: [<span class="num">61</span>], <span class="key">"mesas"</span>: [<span class="num">2</span>],
+  <span class="key">"quantidadePessoas"</span>: <span class="num">2</span>,
+  <span class="key">"mesasNecessarias"</span>: <span class="num">1</span>,
+  <span class="key">"inicio"</span>:    <span class="str">"2026-06-28T19:00:00Z"</span>,
+  <span class="key">"fim"</span>:       <span class="str">"2026-06-28T21:00:00Z"</span>  <span class="cm">← exatamente 2h</span>
+}`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Reserva confirmada, Lara! ✔️\n\nA gente te espera no sábado! 😉🐙'},
+]},
+
+{label:'❌ Sem vaga',msgs:[
+  {s:'bot',lbl:'IA — Reservas',text:'Olá! Bem-vindo ao *WA Restaurant* 🐙\n\nComo posso te ajudar?',opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento'],
+   ann:{t:'now',ti:'GET /api/now — âncora obtida',code:`<span class="kw">GET</span> <span class="url">/api/now</span> → { <span class="key">"hoje"</span>: <span class="str">"2026-06-24"</span> }`}},
+  {s:'user',text:'1 · Fazer uma reserva'},
+  {s:'bot',lbl:'IA — Reservas',text:'Ótimo! Quantas pessoas virão?'},
+  {s:'user',text:'Somos 6 pessoas'},
+  {s:'api',text:'GET /api/availability?quantidadePessoas=6',
+   ann:{t:'get',ti:'GET /api/availability — semana atual',code:`<span class="kw">GET</span> <span class="url">/api/availability</span> ?quantidadePessoas=<span class="num">6</span>`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Hmm, não encontrei horários disponíveis essa semana pra 6 pessoas 😔\n\nVocê tem flexibilidade de datas? Posso verificar outra semana ou uma data específica!',
+   ann:{t:'err',ti:'dias: [] — IA não inventa horários',desc:'O backend retornou array vazio. A IA NÃO inventa horários, NÃO confirma disponibilidade fictícia, NÃO tenta criar a reserva. Informa e oferece buscar outro período.',code:`{ <span class="key">"dias"</span>: [] }
+
+<span class="cm">// IA NUNCA inventa horários.</span>
+<span class="cm">// Comportamento correto:</span>
+<span class="cm">// 1. Informa que não há vagas</span>
+<span class="cm">// 2. Oferece verificar outra data/semana</span>
+<span class="cm">// 3. Aguarda o cliente escolher</span>`}},
+  {s:'user',text:'Que tal semana que vem?'},
+  {s:'api',text:'GET /api/availability?quantidadePessoas=6&dataInicio=2026-07-01&dataFim=2026-07-07',
+   ann:{t:'get',ti:'GET /api/availability — semana seguinte',desc:'"Semana que vem" calculado com âncora hoje=24/06: hoje+7=01/07, até 01/07+6=07/07.',code:`<span class="kw">GET</span> <span class="url">/api/availability</span>
+  ?quantidadePessoas=<span class="num">6</span>
+  &dataInicio=<span class="str">"2026-07-01"</span>
+  &dataFim=<span class="str">"2026-07-07"</span>
+<span class="cm">// hoje(24/06) + 7 = 01/07 (próxima quarta)</span>
+
+{ <span class="key">"dias"</span>: [
+    { <span class="key">"data"</span>: <span class="str">"2026-07-02"</span>, <span class="key">"diaSemanaNome"</span>: <span class="str">"Quinta"</span>, ... },
+    { <span class="key">"data"</span>: <span class="str">"2026-07-04"</span>, <span class="key">"diaSemanaNome"</span>: <span class="str">"Sábado"</span>, ... }
+]}`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Achei as opções da semana que vem pra 6 pessoas:\n\n📅 Qui 02/07 — 19h ou 20h30\n📅 Sáb 04/07 — 19h, 20h ou 21h\n\nTem alguma que te agrada? Ou prefere outra data?'},
+  {s:'user',text:'Quinta 02/07 às 19h!'},
+  {s:'user',text:'Me chamo Roberto Alves'},
+  {s:'bot',lbl:'IA — Reservas',text:'Perfeito, Roberto! Confirma pra mim:\n\n📅 Quinta, 02/07\n🕐 19h00\n👥 6 pessoas\n👤 Roberto Alves\n📍 R. Damásio Mascarenhas, 160 — Santana\n\nTá certinho?',opts:['Sim, pode confirmar!','Preciso alterar algo']},
+  {s:'user',text:'Sim!'},
+  {s:'api',text:'POST /api/reservations',
+   ann:{t:'post',ti:'POST /api/reservations',code:`<span class="kw">POST</span> <span class="url">/api/reservations</span>
+{ <span class="key">"quantidadePessoas"</span>: <span class="num">6</span>, <span class="key">"data"</span>: <span class="str">"2026-07-02"</span>,
+  <span class="key">"hora"</span>: <span class="str">"19:00"</span>,
+  <span class="key">"nomeCliente"</span>: <span class="str">"Roberto Alves"</span>,    <span class="cm">// obrigatório</span>
+  <span class="key">"telefone"</span>: <span class="str">"11966666666"</span> }      <span class="cm">// obrigatório</span>
+<span class="r201">201 Created</span>
+{ <span class="key">"ids"</span>: [<span class="num">74</span>], <span class="key">"mesas"</span>: [<span class="num">5</span>,<span class="num">6</span>],
+  <span class="key">"quantidadePessoas"</span>: <span class="num">6</span>, <span class="key">"mesasNecessarias"</span>: <span class="num">2</span> }`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Reserva confirmada, Roberto! ✔️\n\nA gente te espera na quinta! 😉🐙'},
+]},
+
+{label:'🎉 Dia de evento',msgs:[
+  {s:'bot',lbl:'IA — Reservas',text:'Olá! Bem-vindo ao *WA Restaurant* 🐙\n\nComo posso te ajudar?',opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento'],
+   ann:{t:'now',ti:'GET /api/now — âncora obtida',code:`<span class="kw">GET</span> <span class="url">/api/now</span> → { <span class="key">"hoje"</span>: <span class="str">"2026-06-24"</span> }`}},
+  {s:'user',text:'1 · Fazer uma reserva'},
+  {s:'bot',lbl:'IA — Reservas',text:'Ótimo! Quantas pessoas virão?'},
+  {s:'user',text:'2 pessoas'},
+  {s:'api',text:'GET /api/availability?quantidadePessoas=2',
+   ann:{t:'get',ti:'GET /api/availability — semana atual',code:`<span class="kw">GET</span> <span class="url">/api/availability</span> ?quantidadePessoas=<span class="num">2</span>`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Achei as opções dessa semana pra 2 pessoas:\n\n📅 Qui 25/06 — 19h ou 21h\n📅 Sex 27/06 — 19h30\n\nTem alguma que te agrada? Ou prefere outra data?',
+   ann:{t:'resp',ti:'Quinta-26 ausente — EventDay do admin',desc:'O admin cadastrou 26/06 como EventDay no painel. O backend omite o dia silenciosamente. A IA não sabe o motivo — apenas não o vê e não o oferece.',code:`<span class="cm">// 26/06 é EventDay cadastrado no painel admin.</span>
+<span class="cm">// Backend: isEventDay("2026-06-26") → true → skip</span>
+
+{ <span class="key">"dias"</span>: [
+    { <span class="key">"data"</span>: <span class="str">"2026-06-25"</span>, ... },  <span class="cm">← quinta ok</span>
+    <span class="cm">// 2026-06-26 ausente        ← sexta bloqueada</span>
+    { <span class="key">"data"</span>: <span class="str">"2026-06-27"</span>, ... }   <span class="cm">← sábado ok</span>
+]}
+<span class="cm">// IA simplesmente não oferece a sexta.</span>
+<span class="cm">// Não menciona evento, não explica motivo.</span>`}},
+  {s:'user',text:'Prefiro a sexta-feira, dia 26'},
+  {s:'api',text:'GET /api/availability?quantidadePessoas=2&dataInicio=2026-06-26&dataFim=2026-06-26',
+   ann:{t:'get',ti:'GET /api/availability — cliente insistiu na sexta',code:`<span class="kw">GET</span> <span class="url">/api/availability</span>
+  ?quantidadePessoas=<span class="num">2</span>
+  &dataInicio=<span class="str">"2026-06-26"</span>
+  &dataFim=<span class="str">"2026-06-26"</span>`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Infelizmente essa data não está disponível para reservas 😔\n\nPosso verificar outra data? Que tal quinta (25/06) ou sábado (27/06)?',
+   ann:{t:'err',ti:'dias: [] — EventDay bloqueia consulta direta',desc:'Mesmo consultando só 26/06, o backend retorna vazio. A IA NÃO menciona evento, NÃO explica o motivo. Apenas informa indisponibilidade e sugere alternativas que já sabe que têm vaga.',code:`{ <span class="key">"dias"</span>: [] }
+
+<span class="cm">// IA não sabe por que está vazio.</span>
+<span class="cm">// Não precisa saber — comportamento:</span>
+<span class="cm">// "essa data não está disponível"</span>
+<span class="cm">// + sugere datas vizinhas que já viu com vaga</span>`}},
+  {s:'user',text:'Então sábado 27/06 às 19h30!'},
+  {s:'user',text:'Me chamo Juliana Ramos'},
+  {s:'bot',lbl:'IA — Reservas',text:'Perfeito, Juliana! Confirma pra mim:\n\n📅 Sábado, 27/06\n🕐 19h30\n👥 2 pessoas\n👤 Juliana Ramos\n📍 R. Damásio Mascarenhas, 160 — Santana\n\nTá certinho?',opts:['Sim, pode confirmar!','Preciso alterar algo']},
+  {s:'user',text:'Sim!'},
+  {s:'api',text:'POST /api/reservations',
+   ann:{t:'post',ti:'POST /api/reservations — sábado confirmado',code:`<span class="kw">POST</span> <span class="url">/api/reservations</span>
+{ <span class="key">"quantidadePessoas"</span>: <span class="num">2</span>, <span class="key">"data"</span>: <span class="str">"2026-06-27"</span>,
+  <span class="key">"hora"</span>: <span class="str">"19:30"</span>,
+  <span class="key">"nomeCliente"</span>: <span class="str">"Juliana Ramos"</span>,     <span class="cm">// obrigatório</span>
+  <span class="key">"telefone"</span>: <span class="str">"11955555555"</span> }       <span class="cm">// obrigatório</span>
+<span class="r201">201 Created</span>
+{ <span class="key">"ids"</span>: [<span class="num">82</span>], <span class="key">"mesas"</span>: [<span class="num">1</span>],
+  <span class="key">"quantidadePessoas"</span>: <span class="num">2</span>, <span class="key">"mesasNecessarias"</span>: <span class="num">1</span> }
+<span class="cm">// Sexta bloqueada → cliente redirecionado para sábado.</span>`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Reserva confirmada, Juliana! ✔️\n\nA gente te espera no sábado! 😉🐙'},
+]},
+
+{label:'📱 Tel. incompleto',msgs:[
+  {s:'bot',lbl:'IA — Reservas',text:'Olá! Bem-vindo ao *WA Restaurant* 🐙\n\nComo posso te ajudar?',opts:['1 · Fazer uma reserva','2 · Conhecer o restaurante','3 · Reservar para um evento'],
+   ann:{t:'now',ti:'GET /api/now — âncora obtida',code:`<span class="kw">GET</span> <span class="url">/api/now</span> → { <span class="key">"hoje"</span>: <span class="str">"2026-06-24"</span> }`}},
+  {s:'user',text:'1 · Fazer uma reserva'},
+  {s:'bot',lbl:'IA — Reservas',text:'Ótimo! Quantas pessoas virão?'},
+  {s:'user',text:'2 pessoas'},
+  {s:'api',text:'GET /api/availability?quantidadePessoas=2',
+   ann:{t:'get',ti:'GET /api/availability — semana atual',code:`<span class="kw">GET</span> <span class="url">/api/availability</span> ?quantidadePessoas=<span class="num">2</span>
+{ <span class="key">"dias"</span>: [
+    { <span class="key">"data"</span>: <span class="str">"2026-06-25"</span>, <span class="key">"horarios"</span>: [
+        { <span class="key">"hora"</span>: <span class="str">"19:00"</span>, <span class="key">"duracaoMaximaMinutos"</span>: <span class="num">90</span> }
+    ]}
+]}`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Achei! Pra 2 pessoas:\n\n📅 Qui 25/06 — 19h\n\nTe agrada?'},
+  {s:'user',text:'Pode ser!'},
+  {s:'bot',lbl:'IA — Reservas',text:'Perfeito! Qual é o seu nome?'},
+  {s:'user',text:'Felipe Souza'},
+  {s:'bot',lbl:'IA — Reservas',text:'Perfeito, Felipe! Confirma pra mim:\n\n📅 Quinta, 25/06\n🕐 19h00\n👥 2 pessoas\n👤 Felipe Souza\n📍 R. Damásio Mascarenhas, 160 — Santana\n\nTá certinho?',opts:['Sim, pode confirmar!','Preciso alterar algo']},
+  {s:'user',text:'Sim!'},
+  {s:'api',text:'POST /api/reservations — telefone incompleto',
+   ann:{t:'err',ti:'POST /api/reservations — 400 telefone inválido',desc:'O NoveTalk injetou o telefone, mas veio sem DDD (apenas 8 dígitos). A API agora valida que o telefone deve ter 10–11 dígitos (DDD + número) e rejeita com 400.',code:`<span class="kw">POST</span> <span class="url">/api/reservations</span>
+{
+  <span class="key">"quantidadePessoas"</span>: <span class="num">2</span>,
+  <span class="key">"data"</span>:             <span class="str">"2026-06-25"</span>,
+  <span class="key">"hora"</span>:             <span class="str">"19:00"</span>,
+  <span class="key">"nomeCliente"</span>:     <span class="str">"Felipe Souza"</span>,
+  <span class="key">"telefone"</span>:        <span class="str">"99887766"</span>  <span class="cm">← só 8 dígitos!</span>
+}
+
+<span class="r409">400 Bad Request</span>
+{
+  <span class="key">"error"</span>: <span class="str">"Telefone incompleto. Informe o DDD e o número completo."</span>
+}
+<span class="cm">// Validação: remove não-dígitos, exige 10–11 díg.</span>
+<span class="cm">// 10 díg. = fixo (ex: 1129785034)</span>
+<span class="cm">// 11 díg. = celular (ex: 11999999999)</span>`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Me desculpe, Felipe! Preciso do seu telefone com DDD pra completar a reserva. Pode me passar? Exemplo: 11999999999',
+   ann:{t:'logic',ti:'IA repassa erro naturalmente',desc:'A API retornou erro de validação do telefone. A IA repassa a mensagem de forma natural, sem mencionar API ou códigos de erro. Pede o telefone completo com DDD.',steps:[{n:1,t:'API retornou 400 com mensagem em português'},{n:2,t:'IA repassa de forma natural ao cliente'},{n:3,t:'Aguarda telefone completo para tentar novamente'}]}},
+  {s:'user',text:'11994180311'},
+  {s:'api',text:'POST /api/reservations — retry com telefone correto',
+   ann:{t:'post',ti:'POST /api/reservations — sucesso no retry',desc:'Agora com telefone completo (11 dígitos), a API aceita e cria a reserva.',code:`<span class="kw">POST</span> <span class="url">/api/reservations</span>
+{
+  <span class="key">"quantidadePessoas"</span>: <span class="num">2</span>,
+  <span class="key">"data"</span>:             <span class="str">"2026-06-25"</span>,
+  <span class="key">"hora"</span>:             <span class="str">"19:00"</span>,
+  <span class="key">"nomeCliente"</span>:     <span class="str">"Felipe Souza"</span>,
+  <span class="key">"telefone"</span>:        <span class="str">"11994180311"</span>  <span class="cm">← 11 díg. ✔</span>
+}
+<span class="r201">201 Created</span>
+{ <span class="key">"ids"</span>: [<span class="num">90</span>], <span class="key">"mesas"</span>: [<span class="num">4</span>],
+  <span class="key">"quantidadePessoas"</span>: <span class="num">2</span>, <span class="key">"mesasNecessarias"</span>: <span class="num">1</span> }`}},
+  {s:'bot',lbl:'IA — Reservas',text:'Agora sim! Reserva confirmada, Felipe! ✔️\n\nA gente te espera na quinta! 😉🐙'},
+]},
+];
+
+// -- RENDER --------------------------------------------------------------------
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function render(idx){
+  // tabs
+  const te=document.getElementById('tabs');
+  te.innerHTML='';
+  SCENES.forEach((sc,i)=>{
+    const b=document.createElement('button');
+    b.className='tab'+(i===idx?' on':'');
+    b.textContent=sc.label;
+    b.onclick=()=>render(i);
+    te.appendChild(b);
+  });
+
+  const sc=SCENES[idx];
+
+  // messages
+  const me=document.getElementById('msgs');
+  me.innerHTML='<div class="dchip"><span>Hoje</span></div>';
+  sc.msgs.forEach(m=>{
+    if(m.s==='api'){
+      const d=document.createElement('div');
+      d.className='pill';
+      d.innerHTML='<span>→ '+esc(m.text)+'</span>';
+      me.appendChild(d);
+    } else {
+      const row=document.createElement('div');
+      row.className='row '+(m.s==='user'?'out':'in');
+      if(m.lbl){const l=document.createElement('div');l.className='lbl';l.textContent=m.lbl;row.appendChild(l);}
+      const b=document.createElement('div');
+      b.className='bub '+(m.s==='user'?'out':'in');
+      const tail=document.createElement('span');
+      tail.className=m.s==='user'?'to':'ti';
+      b.appendChild(tail);
+      const txt=document.createElement('span');
+      txt.innerHTML=esc(m.text).replace(/\n/g,'<br>').replace(/\*(.*?)\*/g,'<strong>$1</strong>');
+      b.appendChild(txt);
+      if(m.opts){
+        const qr=document.createElement('div');qr.className='qr';
+        m.opts.forEach(o=>{const d=document.createElement('div');d.className='qb';d.textContent=o;qr.appendChild(d);});
+        b.appendChild(qr);
+      }
+      const meta=document.createElement('div');meta.className='meta';
+      meta.innerHTML='<span class="mt">'+H+'</span>'+(m.s==='user'?'<span class="tk">✓✓</span>':'');
+      b.appendChild(meta);
+      row.appendChild(b);
+      me.appendChild(row);
+    }
+  });
+  me.scrollTop=0;
+
+  // panel
+  const pe=document.getElementById('panel');
+  pe.innerHTML='';
+  sc.msgs.filter(m=>m.ann).forEach(m=>{
+    const ann=m.ann;
+    const c=ANN[ann.t]||ANN.logic;
+    const card=document.createElement('div');
+    card.className='card';
+    card.style.border='1px solid '+c.bd;
+
+    const hdr=document.createElement('div');
+    hdr.className='card-hdr';
+    hdr.style.background=c.bg;
+    hdr.style.borderBottomColor=c.bd;
+    hdr.innerHTML='<div class="dot" style="background:'+c.tx+'"></div><span class="card-title" style="color:'+c.tx+'">'+esc(ann.ti)+'</span>';
+    card.appendChild(hdr);
+
+    const body=document.createElement('div');
+    body.className='card-body';
+
+    if(ann.desc){const d=document.createElement('div');d.className='desc';d.textContent=ann.desc;body.appendChild(d);}
+
+    if(ann.steps){
+      ann.steps.forEach((s,i)=>{
+        const row=document.createElement('div');
+        row.className='step';
+        row.innerHTML='<div class="sn">'+s.n+'</div><div class="st">'+s.t+'</div>';
+        body.appendChild(row);
+      });
+    }
+
+    if(ann.code){
+      const pre=document.createElement('pre');
+      pre.className='code';
+      pre.innerHTML=ann.code;
+      body.appendChild(pre);
+    }
+
+    card.appendChild(body);
+    pe.appendChild(card);
+  });
+  pe.scrollTop=0;
+}
+
+// -- RESIZER -------------------------------------------------------------------
+(function(){
+  const rsz=document.getElementById('rsz');
+  const cc=document.getElementById('chat-col');
+  const root=document.getElementById('cols');
+  let drag=false,sx=0,sw=0;
+  rsz.addEventListener('mousedown',e=>{drag=true;sx=e.clientX;sw=cc.offsetWidth;rsz.style.background='#58a6ff';document.body.style.cursor='col-resize';document.body.style.userSelect='none';e.preventDefault();});
+  document.addEventListener('mousemove',e=>{if(!drag)return;const rw=root.offsetWidth;const nw=Math.max(280,Math.min(sw+e.clientX-sx,rw-280));cc.style.width=nw+'px';});
+  document.addEventListener('mouseup',()=>{if(!drag)return;drag=false;rsz.style.background='';document.body.style.cursor='';document.body.style.userSelect='';});
+})();
+
+render(0);
+</script>
+</body>
+</html>

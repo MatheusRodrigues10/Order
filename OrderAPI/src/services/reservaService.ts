@@ -6,7 +6,7 @@ import { MesaBloqueioRepository } from "../repositories/mesaBloqueioRepository";
 import { EventDayRepository } from "../repositories/eventDayRepository";
 import { SettingsService } from "./settingsService";
 import { HorarioFuncionamentoService, DIAS_SEMANA } from "./horarioFuncionamentoService";
-import { formatDateTimeBr } from "../utils/dateFormat";
+import { formatDateTimeBr, nowBrasilia, nowUTC, brasiliaToUTC, brasiliaComponents, hojeBrasilia, horaBrasilia, diaSemanaEmBrasilia } from "../utils/dateFormat";
 
 export class ReservaService {
   constructor(
@@ -24,11 +24,9 @@ export class ReservaService {
   // ── Referência de data/hora para a IA (âncora de cálculo) ──────────────────
 
   async getNow() {
-    const now = new Date();
-    const diaSemana = now.getDay();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const hoje = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    const hora = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const hoje = hojeBrasilia();
+    const hora = horaBrasilia();
+    const diaSemana = diaSemanaEmBrasilia();
 
     const turnos = await this.horarioFuncionamentoService.getTurnosAtivosDoDia(diaSemana);
 
@@ -50,7 +48,7 @@ export class ReservaService {
 
   async getDashboard() {
     const settings = await this.settingsService.getSettings();
-    const now = new Date();
+    const now = nowUTC();
     const activeMesas = await this.reservaRepo.countActiveMesas(now);
     const mesasReservadas = activeMesas.length;
     const bloqueadasSet = await this.mesaBloqueioRepo.getBloqueadasSet();
@@ -68,7 +66,7 @@ export class ReservaService {
   async listarMesas() {
     await this.cleanupExpired();
     const settings = await this.settingsService.getSettings();
-    const now = new Date();
+    const now = nowUTC();
 
     const reservas = await this.reservaRepo.list();
     const bloqueios = await this.mesaBloqueioRepo.findAll();
@@ -186,7 +184,7 @@ async getStatusApi(data: string, hora: string) {
   const settings = await this.settingsService.getSettings();
 
   const dataHoraReserva = new Date(`${data}T${hora}:00`);
-  const agora = new Date();
+  const agora = nowUTC();
 
   if (dataHoraReserva < agora) {
     return {
@@ -257,7 +255,7 @@ async getDisponibilidade(
   const duracaoDesejada = duracaoMinutos ?? settings.duracaoReservaMinutos;
 
   const inicio = dataInicio ? this.parseData(dataInicio) : this.hojeAsData();
-  const fim = dataFim ? this.parseData(dataFim) : this.addDias(inicio, 6);
+  const fim = dataFim ? this.parseData(dataFim) : this.addDias(inicio, 3);
 
   if (fim < inicio) {
     throw new AppError("'dataFim' não pode ser anterior a 'dataInicio'", 400);
@@ -272,10 +270,16 @@ async getDisponibilidade(
   const dias: Array<{
     data: string;
     diaSemanaNome: string;
+    turnoInicio: string;
+    turnoFim: string;
     horarios: Array<{ hora: string; duracaoMaximaMinutos: number }>;
   }> = [];
 
   const bloqueadasDisp = await this.mesaBloqueioRepo.getBloqueadasSet();
+
+  const periodoInicio = inicio;
+  const periodoFim = new Date(this.addDias(fim, 1).getTime() + 24 * 60 * 60_000);
+  const todasReservas = await this.reservaRepo.findConflicts(periodoInicio, periodoFim);
 
   for (let i = 0; i < totalDias; i++) {
     const diaAtual = this.addDias(inicio, i);
@@ -311,31 +315,35 @@ async getDisponibilidade(
 
     for (const turno of turnos) {
       const candidatos = this.gerarSlotsCandidatos(
-        diaAtual,
+        dataStr,
         turno.horaAbertura,
         turno.horaFechamento
       );
 
       for (const slot of candidatos) {
-        if (slot < new Date()) continue;
+        if (slot < nowUTC()) continue;
 
         const minutosAteFechamento = this.minutosAteFechamento(
           slot,
-          diaAtual,
+          dataStr,
           turno.horaFechamento
         );
 
-        const duracaoMaximaSlot = Math.min(duracaoDesejada, minutosAteFechamento);
+        const duracaoMaximaSlot = Math.min(duracaoDesejada, minutosAteFechamento - settings.tempoLimpezaMinutos);
 
-        if (duracaoMaximaSlot < 30) continue;
+        const duracaoMinima = duracaoMinutos !== undefined ? duracaoDesejada : 30;
+        if (duracaoMaximaSlot < duracaoMinima) continue;
 
         const fimLimpezaSlot = new Date(
           slot.getTime() + (duracaoMaximaSlot + settings.tempoLimpezaMinutos) * 60_000
         );
 
-        const conflitos = await this.reservaRepo.findConflicts(slot, fimLimpezaSlot);
-
-        const mesasComConflito = new Set(conflitos.map((c) => c.numeroMesa));
+        const mesasComConflito = new Set<number>();
+        for (const r of todasReservas) {
+          if (r.inicioReserva < fimLimpezaSlot && r.fimLimpeza > slot) {
+            mesasComConflito.add(r.numeroMesa);
+          }
+        }
 
         const mesasIndisponiveisSet = new Set<number>([
           ...mesasComConflito,
@@ -344,21 +352,24 @@ async getDisponibilidade(
 
         const mesasLivres = settings.totalMesas - mesasIndisponiveisSet.size;
 
-        const temMesasSuficientes = mesasLivres >= mesasNecessarias;
+        if (mesasLivres < mesasNecessarias) continue;
 
-        if (!temMesasSuficientes) continue;
-
+        const slotBrt = brasiliaComponents(slot);
         horariosDoDia.push({
-          hora: `${pad(slot.getHours())}:${pad(slot.getMinutes())}`,
+          hora: `${pad(slotBrt.hour)}:${pad(slotBrt.minute)}`,
           duracaoMaximaMinutos: duracaoMaximaSlot,
         });
       }
     }
 
     if (horariosDoDia.length > 0) {
+      const aberturas = turnos.map((t) => t.horaAbertura).sort();
+      const fechamentos = turnos.map((t) => t.horaFechamento).sort();
       dias.push({
         data: dataStr,
         diaSemanaNome: DIAS_SEMANA[diaSemana],
+        turnoInicio: aberturas[0],
+        turnoFim: fechamentos[fechamentos.length - 1],
         horarios: horariosDoDia,
       });
     }
@@ -413,7 +424,7 @@ async reserveAuto(
     settings.tempoLimpezaMinutos
   );
 
-  if (inicioReserva < new Date()) {
+  if (inicioReserva < nowUTC()) {
     throw new AppError("Não é possível reservar em horário que já passou", 400);
   }
 
@@ -486,9 +497,9 @@ async reserveAuto(
     mesas: reservasCriadas.map((reserva) => reserva.numeroMesa),
     quantidadePessoas,
     mesasNecessarias,
-    inicio: inicioReserva,
-    fim: fimReserva,
-    fimLimpeza
+    inicio: inicioReserva.toISOString(),
+    fim: fimReserva.toISOString(),
+    fimLimpeza: fimLimpeza.toISOString()
   };
 }
 
@@ -524,7 +535,7 @@ async reserveAuto(
       data, hora, duracao, settings.tempoLimpezaMinutos
     );
 
-    if (inicioReserva < new Date()) {
+    if (inicioReserva < nowUTC()) {
       throw new AppError("Não é possível reservar em horário que já passou", 400);
     }
 
@@ -562,9 +573,9 @@ async reserveAuto(
       return {
         ids: [reserva.id],
         mesas: [reserva.numeroMesa],
-        inicio: reserva.inicioReserva,
-        fim: reserva.fimReserva,
-        fimLimpeza: reserva.fimLimpeza
+        inicio: reserva.inicioReserva.toISOString(),
+        fim: reserva.fimReserva.toISOString(),
+        fimLimpeza: reserva.fimLimpeza.toISOString()
       };
     }
 
@@ -621,9 +632,9 @@ async reserveAuto(
     return {
       ids: reservasCriadas.map((r) => r.id),
       mesas: reservasCriadas.map((r) => r.numeroMesa),
-      inicio: reservasCriadas[0].inicioReserva,
-      fim: reservasCriadas[0].fimReserva,
-      fimLimpeza: reservasCriadas[0].fimLimpeza
+      inicio: reservasCriadas[0].inicioReserva.toISOString(),
+      fim: reservasCriadas[0].fimReserva.toISOString(),
+      fimLimpeza: reservasCriadas[0].fimLimpeza.toISOString()
     };
   }
 
@@ -650,7 +661,7 @@ async reserveAuto(
       throw new AppError("Data ou hora inválida", 400);
     }
 
-    const inicioReserva = new Date(y, mo - 1, d, h, m, 0, 0);
+    const inicioReserva = new Date(`${data}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00-03:00`);
     const fimReserva = new Date(inicioReserva.getTime() + duracaoReservaMinutos * 60_000);
     const fimLimpeza = new Date(fimReserva.getTime() + tempoLimpezaMinutos * 60_000);
 
@@ -668,20 +679,30 @@ async reserveAuto(
 
   private validarHorario(inicioReserva: Date, fimLimpeza: Date, horarioAbertura: string, horarioFechamento: string) {
     const toMin = (h: number, m: number) => h * 60 + m;
+    const toBrtMin = (d: Date) => {
+      const brt = new Date(d.getTime() - 3 * 60 * 60_000);
+      return toMin(brt.getUTCHours(), brt.getUTCMinutes());
+    };
+    const toBrtDay = (d: Date) => {
+      const brt = new Date(d.getTime() - 3 * 60 * 60_000);
+      return brt.toISOString().slice(0, 10);
+    };
 
     const [abH, abM] = horarioAbertura.split(":").map(Number);
     const [feH, feM] = horarioFechamento.split(":").map(Number);
 
     const aberturaMin = toMin(abH, abM);
     const fechamentoMin = toMin(feH, feM);
-    const inicioMin = toMin(inicioReserva.getHours(), inicioReserva.getMinutes());
-    const fimMin = toMin(fimLimpeza.getHours(), fimLimpeza.getMinutes());
+    const inicioMin = toBrtMin(inicioReserva);
+    const fimMin = toBrtMin(fimLimpeza);
 
     if (inicioMin < aberturaMin) {
       throw new AppError(`Reservas iniciam a partir das ${horarioAbertura}`, 400);
     }
 
-    if (fimMin > fechamentoMin) {
+    // If fimLimpeza falls on a later BRT calendar day it crossed midnight — always past fechamento
+    const crossesMidnight = toBrtDay(fimLimpeza) > toBrtDay(inicioReserva);
+    if (crossesMidnight || fimMin > fechamentoMin) {
       throw new AppError(
         `A reserva ultrapassaria o horário de fechamento (${horarioFechamento})`,
         400
@@ -703,8 +724,8 @@ async reserveAuto(
   }
 
   private hojeAsData(): Date {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const c = brasiliaComponents();
+    return new Date(c.year, c.month - 1, c.day, 0, 0, 0, 0);
   }
 
   private addDias(data: Date, dias: number): Date {
@@ -721,13 +742,10 @@ async reserveAuto(
   /**
    * Gera horários candidatos de 30 em 30 minutos dentro de um turno, para um dia específico.
    */
-  private gerarSlotsCandidatos(dia: Date, horaAbertura: string, horaFechamento: string): Date[] {
-    const [abH, abM] = horaAbertura.split(":").map(Number);
-    const [feH, feM] = horaFechamento.split(":").map(Number);
-
+  private gerarSlotsCandidatos(dataStr: string, horaAbertura: string, horaFechamento: string): Date[] {
     const slots: Date[] = [];
-    let cursor = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), abH, abM, 0, 0);
-    const fechamento = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), feH, feM, 0, 0);
+    let cursor = brasiliaToUTC(dataStr, horaAbertura);
+    const fechamento = brasiliaToUTC(dataStr, horaFechamento);
 
     while (cursor < fechamento) {
       slots.push(new Date(cursor));
@@ -737,12 +755,8 @@ async reserveAuto(
     return slots;
   }
 
-  /**
-   * Minutos entre um horário candidato e o fechamento do turno correspondente.
-   */
-  private minutosAteFechamento(slot: Date, dia: Date, horaFechamento: string): number {
-    const [feH, feM] = horaFechamento.split(":").map(Number);
-    const fechamento = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), feH, feM, 0, 0);
+  private minutosAteFechamento(slot: Date, dataStr: string, horaFechamento: string): number {
+    const fechamento = brasiliaToUTC(dataStr, horaFechamento);
     return Math.floor((fechamento.getTime() - slot.getTime()) / 60_000);
   }
 }

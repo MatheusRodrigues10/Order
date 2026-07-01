@@ -27,7 +27,7 @@ export function UpcomingReservations() {
 
   return (
     <div className="rounded-md border border-border/60 bg-card">
-      <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border/60 px-3 py-2.5 sm:px-4 sm:py-3">
         <h3 className="font-display text-lg text-foreground">Próximas reservas</h3>
         <button
           onClick={() => refetch()}
@@ -43,7 +43,7 @@ export function UpcomingReservations() {
           <li className="px-4 py-6 text-sm text-muted-foreground">Nenhuma reserva próxima.</li>
         )}
         {upcoming.map((r) => (
-          <li key={r.id} className="flex items-center gap-3 px-4 py-3">
+          <li key={r.id} className="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
             <div className="flex h-10 w-12 flex-col items-center justify-center rounded-sm bg-background/60 text-gold">
               <Clock className="h-3 w-3" />
               <span className="text-xs font-medium">{formatHora(r.inicioReserva)}</span>

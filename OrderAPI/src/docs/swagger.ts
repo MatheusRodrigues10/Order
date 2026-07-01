@@ -55,7 +55,7 @@ const horarioDisponivelSchema = {
     duracaoMaximaMinutos: {
       type: "integer",
       example: 90,
-      description: "Tempo máximo que a reserva pode durar nesse horário, já considerando o fechamento do turno"
+      description: "Tempo máximo que a reserva pode durar nesse horário, considerando o fechamento do turno e o tempo de limpeza. Quando duracaoMinutos é informado, este valor será sempre igual à duração solicitada."
     }
   }
 };
@@ -70,6 +70,8 @@ const disponibilidadeSchema = {
         properties: {
           data: { type: "string", example: "2026-06-20" },
           diaSemanaNome: { type: "string", example: "Sábado" },
+          turnoInicio: { type: "string", example: "19:00", description: "Hora de abertura do primeiro turno do dia" },
+          turnoFim: { type: "string", example: "23:00", description: "Hora de fechamento do último turno do dia" },
           horarios: { type: "array", items: horarioDisponivelSchema }
         }
       },
@@ -229,7 +231,8 @@ const options: swaggerJsdoc.Options = {
         },
         post: {
           tags: ["Admin"],
-          summary: "Criar reserva em mesa específica",
+          summary: "Criar reserva com atribuição automática de mesas",
+          description: "Cria uma reserva selecionando automaticamente as primeiras mesas disponíveis, igual ao comportamento da API externa.",
           security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
@@ -237,9 +240,8 @@ const options: swaggerJsdoc.Options = {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["mesa", "quantidadePessoas", "data", "hora", "nomeCliente", "telefone"],
+                  required: ["quantidadePessoas", "data", "hora", "nomeCliente", "telefone"],
                   properties: {
-                    mesa: { type: "integer", example: 10 },
                     quantidadePessoas: { type: "integer", minimum: 1, example: 3 },
                     data: { type: "string", example: "2026-06-20" },
                     hora: { type: "string", example: "19:00" },
@@ -254,7 +256,7 @@ const options: swaggerJsdoc.Options = {
           responses: {
             "201": { description: "Criada", content: { "application/json": { schema: successWrapper({ $ref: "#/components/schemas/ReservaResult" }) } } },
             "400": { description: "Capacidade excedida ou horário inválido" },
-            "409": { description: "Mesa indisponível" }
+            "409": { description: "Nenhuma mesa disponível" }
           }
         }
       },
@@ -476,9 +478,9 @@ const options: swaggerJsdoc.Options = {
           security: [{ apiPin: [] }],
           parameters: [
             { name: "quantidadePessoas", in: "query", required: true, schema: { type: "integer", minimum: 1, example: 4 } },
-            { name: "duracaoMinutos", in: "query", required: false, schema: { type: "integer", minimum: 30, example: 90 }, description: "Tempo que o cliente pretende ficar. Se omitido, usa o padrão configurado." },
+            { name: "duracaoMinutos", in: "query", required: false, schema: { type: "integer", minimum: 30, example: 90 }, description: "Tempo que o cliente pretende ficar. Quando informado, somente horários com tempo disponível igual ou maior são retornados. Se omitido, usa o padrão configurado e cada horário indica seu tempo máximo disponível." },
             { name: "dataInicio", in: "query", required: false, schema: { type: "string", example: "2026-06-20" }, description: "Se omitido, usa a data de hoje (servidor)." },
-            { name: "dataFim", in: "query", required: false, schema: { type: "string", example: "2026-06-26" }, description: "Se omitido, usa dataInicio + 6 dias. Intervalo máximo de 14 dias." }
+            { name: "dataFim", in: "query", required: false, schema: { type: "string", example: "2026-06-23" }, description: "Se omitido, usa dataInicio + 3 dias. Intervalo máximo de 14 dias." }
           ],
           responses: {
             "200": { description: "Disponibilidade", content: { "application/json": { schema: successWrapper({ $ref: "#/components/schemas/Disponibilidade" }) } } },

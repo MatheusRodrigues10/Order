@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { ReservaService } from "../services/reservaService";
+import { AppError } from "../utils/AppError";
 import { ok } from "../utils/apiResponse";
 
 const reservaService = new ReservaService();
@@ -18,7 +19,11 @@ export class ExternalApiController {
   }
 
   async disponibilidade(req: Request, res: Response) {
-    const { quantidadePessoas, duracaoMinutos, dataInicio, dataFim } = req.query;
+    const params = { ...req.query, ...req.body };
+    const { quantidadePessoas, duracaoMinutos, dataInicio, dataFim } = params;
+    if (quantidadePessoas === undefined || quantidadePessoas === null) {
+      throw new AppError("Quantidade de pessoas é obrigatória", 400);
+    }
     const result = await reservaService.getDisponibilidade(
       Number(quantidadePessoas),
       dataInicio ? String(dataInicio) : undefined,

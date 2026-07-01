@@ -8,7 +8,7 @@ const ITEMS = [
 
 export function StatusLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-border/60 bg-card/60 px-4 py-3">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-border/60 bg-card/60 px-3 py-2 sm:gap-x-5 sm:gap-y-2 sm:px-4 sm:py-3">
       <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Legenda</span>
       {ITEMS.map((i) => (
         <div key={i.label} className="flex items-center gap-2">
