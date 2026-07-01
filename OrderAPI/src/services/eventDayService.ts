@@ -1,6 +1,6 @@
 import { AppError } from "../utils/AppError";
 import { EventDayRepository } from "../repositories/eventDayRepository";
-import { formatDateTimeBr } from "../utils/dateFormat";
+import { formatDateTimeBr, nowBrasilia } from "../utils/dateFormat";
 import { DIAS_SEMANA } from "./horarioFuncionamentoService";
 
 const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -53,7 +53,8 @@ export class EventDayService {
     const [y, m, d] = row.data.split("-").map(Number);
     const dataObj = new Date(y, m - 1, d);
     const diaSemana = dataObj.getDay();
-    const passado = dataObj < new Date(new Date().setHours(0, 0, 0, 0));
+    const hojeBr = nowBrasilia();
+    const passado = dataObj < new Date(hojeBr.getFullYear(), hojeBr.getMonth(), hojeBr.getDate(), 0, 0, 0, 0);
 
     return {
       id: row.id,

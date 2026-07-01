@@ -1,4 +1,5 @@
 import { AppError } from "../utils/AppError";
+import { brasiliaComponents, brasiliaToUTC } from "../utils/dateFormat";
 import { HorarioFuncionamentoRepository } from "../repositories/horarioFuncionamentoRepository";
 
 export const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -77,24 +78,22 @@ export class HorarioFuncionamentoService {
    * Se não houver nenhum turno configurado, reserva é permitida (política aberta).
    */
   async validarHorarioReserva(inicioEm: Date, fimEm: Date) {
-    const diaSemana = inicioEm.getDay();
+    const c = brasiliaComponents(inicioEm);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const dataBrt = `${c.year}-${pad(c.month)}-${pad(c.day)}`;
+    const diaSemana = new Date(c.year, c.month - 1, c.day).getDay();
+
     const horarios = await this.repo.findByDia(diaSemana);
     const ativos = horarios.filter((h) => h.ativo);
 
-    if (ativos.length === 0) return; // sem restrição configurada
+    if (ativos.length === 0) return;
 
     for (const h of ativos) {
-      const [abH, abM] = h.horaAbertura.split(":").map(Number);
-      const [fchH, fchM] = h.horaFechamento.split(":").map(Number);
-
-      const abertura = new Date(inicioEm);
-      abertura.setHours(abH, abM, 0, 0);
-
-      const fechamento = new Date(inicioEm);
-      fechamento.setHours(fchH, fchM, 0, 0);
+      const abertura = brasiliaToUTC(dataBrt, h.horaAbertura);
+      const fechamento = brasiliaToUTC(dataBrt, h.horaFechamento);
 
       if (inicioEm >= abertura && fimEm <= fechamento) {
-        return; // cabe neste turno
+        return;
       }
     }
 

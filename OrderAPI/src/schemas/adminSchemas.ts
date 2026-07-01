@@ -45,7 +45,6 @@ const telefoneObrigatorio = z.string({ error: "Telefone é obrigatório" })
 
 export const criarReservaAdminSchema = z.object({
   body: z.object({
-    mesa: z.coerce.number({ error: "Número da mesa é obrigatório" }).int().positive("Número da mesa inválido"),
     quantidadePessoas,
     data: dataString,
     hora: horaString,
@@ -60,19 +59,40 @@ export const reservarExternalSchema = z.object({
     quantidadePessoas,
     data: dataString,
     hora: horaString,
-    duracaoMinutos: duracaoMinutosOpt,
+    duracaoMinutos: z.preprocess(
+      (val) => (val === "" || val === null ? undefined : val),
+      duracaoMinutosOpt
+    ),
     nomeCliente: nomeClienteObrigatorio,
     telefone: telefoneObrigatorio
   })
 });
 
+const emptyToUndefined = z.preprocess(
+  (val) => (val === "" || val === null ? undefined : val),
+  z.any()
+);
+
+const optionalString = emptyToUndefined.pipe(
+  z.string().regex(dataRegex, "Formato YYYY-MM-DD").optional()
+);
+
+const optionalNumber = emptyToUndefined.pipe(
+  z.coerce.number().int().min(30, "Duração mínima é 30 minutos").optional()
+);
+
+const requiredNumber = emptyToUndefined.pipe(quantidadePessoas.optional());
+
+const disponibilidadeFields = z.object({
+  quantidadePessoas: requiredNumber,
+  duracaoMinutos: optionalNumber,
+  dataInicio: optionalString,
+  dataFim: optionalString,
+});
+
 export const disponibilidadeQuerySchema = z.object({
-  query: z.object({
-    quantidadePessoas,
-    duracaoMinutos: duracaoMinutosOpt,
-    dataInicio: z.string().regex(dataRegex, "Formato YYYY-MM-DD").optional(),
-    dataFim: z.string().regex(dataRegex, "Formato YYYY-MM-DD").optional()
-  })
+  query: disponibilidadeFields.default({}),
+  body: disponibilidadeFields.default({})
 });
 
 export const reservaParamSchema = z.object({

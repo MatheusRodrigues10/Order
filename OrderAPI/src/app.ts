@@ -5,7 +5,9 @@ import helmet from "helmet";
 import { swaggerSpec } from "./docs/swagger";
 import { swaggerHtml } from "./docs/swaggerHtml";
 import { errorHandler } from "./middlewares/errorHandler";
+import { requestLogger } from "./middlewares/requestLogger";
 import { routes } from "./routes";
+import { logViewerRoutes } from "./routes/logViewerRoutes";
 import { ReservaService } from "./services/reservaService";
 
 export const app = express();
@@ -17,16 +19,20 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
       imgSrc: ["'self'", "data:"],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https://wa-restaurant.vercel.app"],
     },
   },
   crossOriginEmbedderPolicy: false,
 }));
+const corsOrigin = process.env.CORS_ORIGIN ?? (process.env.NODE_ENV === "production" ? "*" : "http://localhost:5173");
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ?? "*",
-  credentials: true
+  origin: corsOrigin,
+  credentials: corsOrigin !== "*"
 }));
 app.use(express.json({ limit: "100kb" }));
+// requestLogger runs before rateLimit so throttled /api/* requests are still recorded
+app.use(requestLogger);
+
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -57,6 +63,6 @@ app.get(["/docs", "/docs/"], (_req, res) => {
   res.setHeader("Content-Type", "text/html");
   res.send(swaggerHtml);
 });
-
+app.use(logViewerRoutes);
 app.use(routes);
 app.use(errorHandler);

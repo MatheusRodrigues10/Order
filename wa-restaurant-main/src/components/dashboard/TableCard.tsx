@@ -70,8 +70,15 @@ export function TableCard({ mesa, lugaresPorMesa = 4, onClick }: TableCardProps)
             aria-label={STATUS_LABELS[mesa.status]}
           />
 
-          <div className="font-display text-lg leading-none text-foreground sm:text-xl">
-            {`Mesa ${allMesaNums.join(" · ")}`}
+          <div className="flex flex-wrap justify-center gap-1">
+            {allMesaNums.map((n) => (
+              <span
+                key={n}
+                className="flex h-6 min-w-[1.5rem] items-center justify-center rounded bg-foreground/10 px-1.5 font-display text-xs font-medium text-foreground"
+              >
+                {n}
+              </span>
+            ))}
           </div>
 
           <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">

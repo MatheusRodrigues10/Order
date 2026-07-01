@@ -44,10 +44,9 @@ async function main() {
   console.log("  Admin password rotated: OK");
 
   // ── Rotacionar API PIN ─────────────────────────────────────────────────────
-  const newPinHash = await bcrypt.hash(apiPin, 12);
   await prisma.settings.update({
     where: { id: 1 },
-    data: { apiPin: newPinHash },
+    data: { apiPin },
   });
   console.log("  API PIN rotated: OK");
 

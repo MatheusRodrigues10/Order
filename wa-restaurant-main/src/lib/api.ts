@@ -1,4 +1,37 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+function getApiUrl(): string {
+  const rawUrl = import.meta.env.VITE_API_URL?.trim();
+
+  if (!rawUrl) {
+    if (import.meta.env.DEV) return "http://localhost:3001";
+    throw new Error(
+      "VITE_API_URL não está configurada em produção. Configure na Vercel com uma URL absoluta: https://wa-restaurant.vercel.app"
+    );
+  }
+
+  if (rawUrl === "VITE_API_URL") {
+    throw new Error(
+      "VITE_API_URL está com valor inválido: o valor não pode ser o nome da variável."
+    );
+  }
+
+  if (!/^https?:\/\//i.test(rawUrl)) {
+    throw new Error(
+      `VITE_API_URL inválida: "${rawUrl}". Use uma URL absoluta com https://. Exemplo: https://wa-restaurant.vercel.app`
+    );
+  }
+
+  const normalizedUrl = rawUrl.replace(/\/+$/, "");
+
+  if (import.meta.env.PROD && normalizedUrl.includes("localhost")) {
+    throw new Error(
+      "VITE_API_URL aponta para localhost em produção. Configure a URL pública do backend na Vercel."
+    );
+  }
+
+  return normalizedUrl;
+}
+
+const API_URL = getApiUrl();
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -62,7 +95,6 @@ export const api = {
     listarReservas: () => request<Reserva[]>("/admin/reservations"),
 
     criarReserva: (body: {
-      mesa: number;
       quantidadePessoas: number;
       data: string;
       hora: string;
@@ -177,6 +209,7 @@ export interface DashboardData {
 export interface Reserva {
   id: number;
   numeroMesa: number;
+  grupoReservaId?: string | null;
   quantidadePessoas: number;
   nomeCliente: string;
   telefone: string;

@@ -44,7 +44,6 @@ export class ReservaRepository {
     return prisma.reserva.groupBy({
       by: ["numeroMesa"],
       where: {
-        inicioReserva: { lte: now },
         fimLimpeza: { gt: now }
       }
     });

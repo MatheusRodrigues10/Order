@@ -19,14 +19,13 @@ import {
 } from "@/components/ui/select";
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
-import { api, ApiError, type HorarioFuncionamento, type Config } from "@/lib/api";
+import { api, ApiError, type HorarioFuncionamento, type Config, type EventDay } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Users, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Users, Clock, AlertTriangle, CheckCircle2, CalendarOff, Ban } from "lucide-react";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  prefillTableId?: number;
   onSuccess?: () => void;
   initialPeriod?: "lunch" | "dinner";
   initialDate?: string;
@@ -97,7 +96,6 @@ function maskTelefone(value: string): string {
 export function NewReservationModal({
   open,
   onClose,
-  prefillTableId,
   onSuccess,
   initialPeriod,
   initialDate,
@@ -107,8 +105,7 @@ export function NewReservationModal({
   const defaultPeriod = (): "lunch" | "dinner" =>
     initialPeriod ?? (new Date().getHours() < 15 ? "lunch" : "dinner");
 
-  const [mesa, setMesa] = useState<number | "">(prefillTableId ?? "");
-  const [qtd, setQtd] = useState(2);
+  const [qtd, setQtd] = useState<number | "">(2);
   const [data, setData] = useState(initialDate ?? new Date().toISOString().slice(0, 10));
   const [period, setPeriod] = useState<"lunch" | "dinner">(defaultPeriod);
   const [hora, setHora] = useState("");
@@ -131,16 +128,37 @@ export function NewReservationModal({
     staleTime: 300_000,
   });
 
+  const { data: eventDays = [] } = useQuery<EventDay[]>({
+    queryKey: ["event-days"],
+    queryFn: api.admin.listarEventDays,
+    staleTime: 300_000,
+  });
+
+  const eventDayInfo = useMemo(
+    () => eventDays.find((e) => e.data === data) ?? null,
+    [eventDays, data],
+  );
+
+  const dayOfWeek = new Date(data + "T12:00:00").getDay();
+  const isLunchClosed = useMemo(
+    () => horarios.length > 0 && !horarios.some((h) => h.diaSemana === dayOfWeek && h.turno === 1 && h.ativo),
+    [horarios, dayOfWeek],
+  );
+  const isDinnerClosed = useMemo(
+    () => horarios.length > 0 && !horarios.some((h) => h.diaSemana === dayOfWeek && h.turno === 2 && h.ativo),
+    [horarios, dayOfWeek],
+  );
+  const isRestaurantClosed = isLunchClosed && isDinnerClosed;
+  const isCurrentShiftClosed = period === "lunch" ? isLunchClosed : isDinnerClosed;
+
   const maxDuracaoMin = config?.duracaoReservaMinutos ?? 120;
 
-  // Opções de duração: 30, 60, 90, ... até maxDuracaoMin
   const duracaoOptions = useMemo(() => {
     const opts: number[] = [];
     for (let m = 30; m <= maxDuracaoMin; m += 30) opts.push(m);
     return opts;
   }, [maxDuracaoMin]);
 
-  // Duração ativa: usa estado ou cai no máximo configurado
   const duracaoAtiva = duracao > 0 ? duracao : maxDuracaoMin;
 
   useEffect(() => {
@@ -149,20 +167,17 @@ export function NewReservationModal({
     const p = initialPeriod ?? (new Date().getHours() < 15 ? "lunch" : "dinner");
     setData(d);
     setPeriod(p);
-    setMesa(prefillTableId ?? "");
-    setQtd(2);
+    setQtd("");
     setDuracao(maxDuracaoMin);
     setNome("");
     setTel("");
     setAgoraMode(false);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Inicializa duração quando config carrega pela primeira vez
   useEffect(() => {
     if (config && duracao === 0) setDuracao(config.duracaoReservaMinutos);
   }, [config]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Garante que duração não ultrapasse o novo máximo se config mudar
   useEffect(() => {
     if (duracao > maxDuracaoMin) setDuracao(maxDuracaoMin);
   }, [maxDuracaoMin]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -182,20 +197,14 @@ export function NewReservationModal({
     return all.filter((s) => toMin(s) > nowMin);
   }, [shiftWindow, duracaoAtiva, data, config]);
 
-  // Quando slots mudam (período, data ou duração), reseta o horário para o primeiro slot
   useEffect(() => {
     if (!agoraMode) setHora(slots[0] ?? "");
   }, [slots]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sai do modo agora quando o usuário muda período ou data
   useEffect(() => {
     if (agoraMode) setAgoraMode(false);
   }, [period, data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Quando duração muda em agoraMode, mantém o modo mas recalcula o feedback
-  // (hora permanece a mesma, mas o fimReserva muda — o bloco abaixo já é reativo)
-
-  // Contador em tempo real de quanto resta no turno (atualiza a cada 30s)
   useEffect(() => {
     if (!agoraMode) return;
 
@@ -228,7 +237,6 @@ export function NewReservationModal({
     setHora(slots[0] ?? "");
   };
 
-  // Cálculos derivados
   const horaMin = hora ? toMin(hora) : 0;
   const fimReservaMin = hora ? horaMin + duracaoAtiva : 0;
   const aberturaMin = toMin(shiftWindow.abertura);
@@ -238,15 +246,10 @@ export function NewReservationModal({
   const horaFitsTurno = hora ? horaMin >= aberturaMin && fimReservaMin <= fechamentoMin : false;
 
   const lugaresPorMesa = config?.lugaresPorMesa ?? 4;
-  const tablesNeeded = mesa !== "" ? Math.ceil(qtd / lugaresPorMesa) : 1;
-  const mesasJuntadas =
-    tablesNeeded > 1 && mesa !== ""
-      ? Array.from({ length: tablesNeeded }, (_, i) => Number(mesa) + i)
-      : [];
+  const tablesNeeded = qtd !== "" ? Math.ceil(qtd / lugaresPorMesa) : 1;
 
   const reset = () => {
-    setMesa(prefillTableId ?? "");
-    setQtd(2);
+    setQtd("");
     const d = initialDate ?? new Date().toISOString().slice(0, 10);
     const p = initialPeriod ?? (new Date().getHours() < 15 ? "lunch" : "dinner");
     setData(d);
@@ -264,34 +267,19 @@ export function NewReservationModal({
   };
 
   const submit = async () => {
-    if (!mesa) {
-      toast.error("Informe o número da mesa");
-      return;
-    }
-    const mesaNum = Number(mesa);
-    const maxMesa = config?.totalMesas ?? 999;
-    if (mesaNum < 1 || mesaNum > maxMesa) {
-      toast.error(
-        `Mesa ${mesaNum} não existe. O restaurante tem ${maxMesa} mesa${maxMesa !== 1 ? "s" : ""}.`,
-      );
-      return;
-    }
-    if (tablesNeeded > 1 && mesaNum + tablesNeeded - 1 > maxMesa) {
-      const lastMesa = mesaNum + tablesNeeded - 1;
-      toast.error(
-        `São necessárias ${tablesNeeded} mesas consecutivas (${mesaNum}–${lastMesa}), mas o restaurante tem apenas ${maxMesa} mesas.`,
-      );
-      return;
-    }
     if (!data) {
       toast.error("Informe a data");
+      return;
+    }
+    if (eventDayInfo) {
+      toast.error("Restaurante fechado para evento neste dia");
       return;
     }
     if (!hora) {
       toast.error("Informe o horário");
       return;
     }
-    if (qtd < 1) {
+    if (qtd === "" || qtd < 1) {
       toast.error("Informe a quantidade de pessoas");
       return;
     }
@@ -339,8 +327,7 @@ export function NewReservationModal({
     setLoading(true);
     try {
       const result = await api.admin.criarReserva({
-        mesa: Number(mesa),
-        quantidadePessoas: qtd,
+        quantidadePessoas: qtd as number,
         data,
         hora,
         duracaoMinutos: duracaoAtiva,
@@ -370,45 +357,28 @@ export function NewReservationModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90svh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">Nova reserva</DialogTitle>
           <DialogDescription>Preencha os dados para reservar uma mesa.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
-          {/* Mesa + Pessoas */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Número da mesa</Label>
-              <Input
-                type="number"
-                min={1}
-                max={config?.totalMesas ?? 999}
-                value={mesa}
-                onChange={(e) => setMesa(e.target.value === "" ? "" : Number(e.target.value))}
-                placeholder="Ex.: 10"
-              />
-              {config && (
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Mesas disponíveis: 1 a {config.totalMesas}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label>Pessoas</Label>
-              <Input
-                type="number"
-                min={1}
-                max={999}
-                value={qtd}
-                onChange={(e) => setQtd(Number(e.target.value))}
-              />
-            </div>
+          {/* Pessoas */}
+          <div>
+            <Label>Pessoas</Label>
+            <Input
+              type="number"
+              min={1}
+              max={999}
+              value={qtd}
+              onChange={(e) => setQtd(e.target.value === "" ? "" : Number(e.target.value))}
+              className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
           </div>
 
           {/* Data + Turno */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label>Data</Label>
               <Input
@@ -416,6 +386,7 @@ export function NewReservationModal({
                 value={data}
                 min={today}
                 onChange={(e) => setData(e.target.value)}
+                className={eventDayInfo ? "border-destructive focus-visible:ring-destructive" : ""}
               />
             </div>
             <div>
@@ -426,16 +397,44 @@ export function NewReservationModal({
                 className="mt-1"
               >
                 <TabsList className="w-full">
-                  <TabsTrigger value="lunch" className="flex-1 text-xs">
+                  <TabsTrigger value="lunch" className="flex-1 gap-1 text-xs">
                     Almoço
+                    {isLunchClosed && <Ban className="h-3 w-3 text-orange-400" />}
                   </TabsTrigger>
-                  <TabsTrigger value="dinner" className="flex-1 text-xs">
+                  <TabsTrigger value="dinner" className="flex-1 gap-1 text-xs">
                     Jantar
+                    {isDinnerClosed && <Ban className="h-3 w-3 text-orange-400" />}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
           </div>
+
+          {/* Aviso dia de evento */}
+          {eventDayInfo && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-sm">
+              <CalendarOff className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <div>
+                <span className="font-medium text-destructive">Restaurante fechado — dia de evento</span>
+                {eventDayInfo.motivo && (
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{eventDayInfo.motivo}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Aviso restaurante fechado (ambos turnos sem operação) */}
+          {!eventDayInfo && isRestaurantClosed && (
+            <div className="flex items-start gap-2 rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 text-sm">
+              <Clock className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
+              <div>
+                <span className="font-medium text-orange-400">Restaurante fechado neste dia</span>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Nenhum turno ativo para este dia da semana
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Duração */}
           <div>
@@ -462,22 +461,35 @@ export function NewReservationModal({
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <Label>Horário de chegada</Label>
-              <button
-                type="button"
-                onClick={agoraMode ? cancelarAgoraMode : handleReservarAgora}
-                className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
-                  agoraMode
-                    ? "bg-primary text-primary-foreground"
-                    : "border border-input bg-background text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Clock className="h-3 w-3" />
-                {agoraMode ? "Cancelar" : "Reservar agora"}
-              </button>
+              {!isCurrentShiftClosed && (
+                <button
+                  type="button"
+                  onClick={agoraMode ? cancelarAgoraMode : handleReservarAgora}
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                    agoraMode
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-input bg-background text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Clock className="h-3 w-3" />
+                  {agoraMode ? "Cancelar" : "Reservar agora"}
+                </button>
+              )}
             </div>
 
-            {agoraMode ? (
-              /* Modo "Reservar agora" — exibe horário capturado e status em tempo real */
+            {isCurrentShiftClosed ? (
+              <div className="flex items-start gap-2 rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 text-sm">
+                <Ban className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
+                <div>
+                  <span className="font-medium text-orange-400">
+                    Turno de {period === "lunch" ? "almoço" : "jantar"} fechado neste dia
+                  </span>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {period === "lunch" ? "Selecione o turno de jantar" : "Selecione o turno de almoço"} para verificar disponibilidade
+                  </p>
+                </div>
+              </div>
+            ) : agoraMode ? (
               <div
                 className={`rounded-md border px-3 py-2.5 ${
                   horaFitsTurno
@@ -524,7 +536,6 @@ export function NewReservationModal({
                 </div>
               </div>
             ) : slots.length > 0 ? (
-              /* Modo normal — dropdown com slots de 30 em 30 min */
               <Select value={hora} onValueChange={setHora}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o horário" />
@@ -543,19 +554,21 @@ export function NewReservationModal({
               </div>
             )}
 
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {turnoNome}: {shiftWindow.abertura} – {shiftWindow.fechamento}
-              {slots.length > 0 && !agoraMode && (
-                <>
-                  {" "}
-                  · último horário: <span className="font-medium">{slots[slots.length - 1]}</span>
-                </>
-              )}
-            </p>
+            {!isCurrentShiftClosed && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {turnoNome}: {shiftWindow.abertura} – {shiftWindow.fechamento}
+                {slots.length > 0 && !agoraMode && (
+                  <>
+                    {" "}
+                    · último horário: <span className="font-medium">{slots[slots.length - 1]}</span>
+                  </>
+                )}
+              </p>
+            )}
           </div>
 
           {/* Nome e Telefone */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <Label>Nome do cliente</Label>
               <Input
@@ -581,7 +594,7 @@ export function NewReservationModal({
           </div>
 
           {/* Aviso mesas unidas */}
-          {mesasJuntadas.length > 1 && (
+          {tablesNeeded > 1 && (
             <div className="flex items-start gap-2 rounded-md border border-gold/30 bg-gold/5 px-3 py-2.5 text-sm">
               <Users className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
               <div>
@@ -589,9 +602,8 @@ export function NewReservationModal({
                   {tablesNeeded} mesas serão unidas
                 </span>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  Para {qtd} pessoas ({lugaresPorMesa} por mesa), as mesas{" "}
-                  <span className="font-medium text-foreground">{mesasJuntadas.join(", ")}</span>{" "}
-                  serão reservadas juntas.
+                  Para {qtd || 0} pessoas ({lugaresPorMesa} por mesa), {tablesNeeded} mesas consecutivas
+                  serão reservadas automaticamente.
                 </p>
               </div>
             </div>
@@ -606,7 +618,7 @@ export function NewReservationModal({
           <Button variant="ghost" onClick={handleClose} disabled={loading}>
             Cancelar
           </Button>
-          <Button onClick={submit} disabled={loading || (agoraMode && !horaFitsTurno)}>
+          <Button onClick={submit} disabled={loading || (agoraMode && !horaFitsTurno) || !!eventDayInfo || isCurrentShiftClosed || isRestaurantClosed}>
             {loading ? "Reservando…" : "Confirmar reserva"}
           </Button>
         </DialogFooter>

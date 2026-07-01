@@ -81,3 +81,19 @@ model EventDay {
   @@unique([data])
   @@map("event_days")
 }
+
+model RequestLog {
+  id           Int      @id @default(autoincrement())
+  method       String
+  path         String
+  status       Int      @default(0)
+  durationMs   Int      @default(0)
+  query        String   @default("{}")
+  body         String   @default("{}")
+  headers      String   @default("{}")
+  responseBody String   @default("{}")
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("request_logs")
+}
